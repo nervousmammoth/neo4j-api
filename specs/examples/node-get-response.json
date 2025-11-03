@@ -1,0 +1,45 @@
+{
+  "nodes": [
+    {
+      "id": "123",
+      "data": {
+        "categories": ["Person", "Employee"],
+        "properties": {
+          "name": "Alice Smith",
+          "age": 30,
+          "email": "alice@example.com",
+          "city": "New York",
+          "occupation": "Software Engineer",
+          "employee_id": "EMP-001",
+          "hire_date": "2020-01-15"
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "789",
+      "source": "123",
+      "target": "456",
+      "data": {
+        "type": "WORKS_FOR",
+        "properties": {
+          "since": "2020-01-15",
+          "role": "Senior Engineer"
+        }
+      }
+    },
+    {
+      "id": "790",
+      "source": "123",
+      "target": "124",
+      "data": {
+        "type": "KNOWS",
+        "properties": {
+          "since": "2018-05-20",
+          "relationship": "colleague"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "error": {
+    "code": "NEO4J_CONNECTION_ERROR",
+    "message": "Failed to connect to Neo4j database",
+    "details": {
+      "neo4j_uri": "bolt://localhost:7687",
+      "error": "ServiceUnavailable: Connection refused"
+    }
+  }
+}

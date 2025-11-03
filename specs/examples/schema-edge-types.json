@@ -1,0 +1,14 @@
+{
+  "types": [
+    "WORKS_FOR",
+    "KNOWS",
+    "MANAGES",
+    "PURCHASED",
+    "CONTAINS",
+    "FRIEND_OF",
+    "LIVES_AT",
+    "WORKS_ON",
+    "REPORTS_TO",
+    "ACQUIRED_BY"
+  ]
+}

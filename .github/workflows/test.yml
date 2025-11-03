@@ -1,0 +1,150 @@
+name: Test Suite
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  # Unit Tests with pytest
+  unit-tests:
+    name: Unit Tests (pytest)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Run pytest
+        run: |
+          pytest tests/ \
+            --cov=app \
+            --cov-report=xml \
+            --cov-report=html \
+            --cov-report=term-missing \
+            -v
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+
+      - name: Archive coverage reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-reports-unit
+          path: htmlcov/
+
+  # BDD Acceptance Tests with behave
+  bdd-tests:
+    name: BDD Acceptance Tests (behave)
+    runs-on: ubuntu-latest
+    needs: unit-tests  # Run after unit tests pass
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Run BDD tests (smoke)
+        run: |
+          behave features/ --tags=@smoke --format=pretty --format=json --outfile=reports/behave/smoke.json
+
+      - name: Run all BDD tests
+        run: |
+          behave features/ --format=pretty --format=html --outfile=reports/behave/index.html --format=json --outfile=reports/behave/results.json
+
+      - name: Upload BDD test reports
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: bdd-test-reports
+          path: reports/behave/
+
+  # Code Quality Checks
+  code-quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Run Black (formatter check)
+        run: black --check app/ tests/ features/
+
+      - name: Run Ruff (linter)
+        run: ruff check app/ tests/ features/
+
+      - name: Run mypy (type checking)
+        run: mypy app/ --strict
+
+  # Summary Job
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [unit-tests, bdd-tests, code-quality]
+    if: always()
+
+    steps:
+      - name: Check test results
+        run: |
+          echo "✅ Unit Tests: ${{ needs.unit-tests.result }}"
+          echo "✅ BDD Tests: ${{ needs.bdd-tests.result }}"
+          echo "✅ Code Quality: ${{ needs.code-quality.result }}"
+
+          if [[ "${{ needs.unit-tests.result }}" != "success" ]] || \
+             [[ "${{ needs.bdd-tests.result }}" != "success" ]] || \
+             [[ "${{ needs.code-quality.result }}" != "success" ]]; then
+            echo "❌ Some tests failed"
+            exit 1
+          fi
+
+          echo "🎉 All tests passed!"

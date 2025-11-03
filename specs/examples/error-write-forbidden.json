@@ -1,0 +1,16 @@
+{
+  "error": {
+    "code": "WRITE_OPERATION_FORBIDDEN",
+    "message": "Write operations are not allowed. This API is read-only.",
+    "details": {
+      "query": "CREATE (n:Person {name: 'Bob'}) RETURN n",
+      "forbidden_keyword": "CREATE",
+      "allowed_operations": [
+        "MATCH",
+        "RETURN",
+        "CALL db.*",
+        "SHOW"
+      ]
+    }
+  }
+}

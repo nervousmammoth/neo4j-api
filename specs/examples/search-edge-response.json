@@ -1,0 +1,40 @@
+{
+  "type": "edge",
+  "totalHits": 3,
+  "moreResults": false,
+  "results": [
+    {
+      "id": "789",
+      "type": "WORKS_FOR",
+      "source": "123",
+      "target": "456",
+      "properties": {
+        "since": "2020-01-15",
+        "role": "Senior Engineer",
+        "department": "R&D"
+      }
+    },
+    {
+      "id": "790",
+      "type": "WORKS_FOR",
+      "source": "124",
+      "target": "456",
+      "properties": {
+        "since": "2021-06-01",
+        "role": "Engineer",
+        "department": "Platform"
+      }
+    },
+    {
+      "id": "791",
+      "type": "WORKS_FOR",
+      "source": "125",
+      "target": "457",
+      "properties": {
+        "since": "2019-03-10",
+        "role": "Lead Engineer",
+        "team": "Backend"
+      }
+    }
+  ]
+}
