@@ -1,9 +1,0 @@
-{
-  "error": {
-    "code": "MISSING_API_KEY",
-    "message": "API key is required for this endpoint",
-    "details": {
-      "header": "X-API-Key"
-    }
-  }
-}

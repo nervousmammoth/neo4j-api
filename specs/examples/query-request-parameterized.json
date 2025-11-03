@@ -1,8 +1,0 @@
-{
-  "query": "MATCH (p:Person)-[r:WORKS_FOR]->(c:Company) WHERE p.age > $age AND c.name = $company RETURN p, r, c LIMIT $limit",
-  "parameters": {
-    "age": 25,
-    "company": "Acme Corp",
-    "limit": 10
-  }
-}

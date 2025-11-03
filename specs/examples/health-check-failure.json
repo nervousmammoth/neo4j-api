@@ -1,5 +1,0 @@
-{
-  "status": "unhealthy",
-  "neo4j": "disconnected",
-  "error": "ServiceUnavailable: Connection refused to bolt://localhost:7687"
-}
