@@ -216,3 +216,62 @@ Feature: Search Endpoints
     And the first result should have field "type" with value "KNOWS"
     And the first result should have field "source" with value "123"
     And the first result should have field "target" with value "456"
+
+  # Special Characters and Unicode Tests
+
+  @search @special-characters @critical
+  Scenario Outline: Search handles special characters correctly
+    Given the database contains a node with name "<name>"
+    When I search for nodes with query "<query>"
+    Then the response status code should be 200
+    And the response should contain at least 1 result
+    And the result should have property "name" with value "<name>"
+
+    Examples:
+      | name                     | query               |
+      | O'Brien                  | O'Brien             |
+      | Jean-Luc                 | Jean-Luc            |
+      | Name with "quotes"       | quotes              |
+
+  @search @unicode @critical
+  Scenario: Search handles UTF-8 encoded international characters
+    Given the database contains nodes with international characters
+    When I search for nodes with query "Müller"
+    Then the response status code should be 200
+    And the response should properly encode UTF-8 characters
+    And the response should contain at least 1 result
+
+  @search @unicode
+  Scenario Outline: Search supports multiple writing systems
+    Given the database contains a node with name "<name>"
+    When I search for nodes with query "<search>"
+    Then the response status code should be 200
+    And the response should contain at least 1 result
+    And the result should contain UTF-8 characters
+
+    Examples:
+      | name       | search   |
+      | Müller     | Müller   |
+      | 山田太郎   | 山田     |
+      | Владимир   | Владимир |
+
+  @search @pagination @metadata
+  Scenario: Search response includes pagination metadata
+    Given the database contains 50 person nodes
+    When I search for nodes with query "Person" and parameters:
+      | parameter | value |
+      | size      | 10    |
+      | from      | 0     |
+    Then the response status code should be 200
+    And the response should have field "pagination" with
+      | field   | value |
+      | size    | 10    |
+      | from    | 0     |
+      | hasNext | true  |
+
+  @search @concurrency @performance
+  Scenario: Search handles concurrent requests correctly
+    Given the database contains 100 nodes
+    When I send 5 concurrent GET requests to "/api/neo4j/search/node/full?q=test"
+    Then all requests should return status code 200
+    And all requests should return consistent results

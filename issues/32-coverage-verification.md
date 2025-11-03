@@ -1,0 +1,286 @@
+# Issue 32: Verify 100% Test Coverage Requirement
+
+## Status
+⏳ **TODO**
+
+**Estimated Time:** 1 hour
+**Branch:** `issue/32-coverage-verification`
+**Phase:** 7 - Integration & Polish
+
+## Description
+Verify that 100% test coverage requirement is met across all application code. Review coverage report, identify any gaps, and ensure all code paths are tested.
+
+## Related Specifications
+- [ ] **Reference:** `pyproject.toml` - Coverage configuration
+- [ ] **Reference:** `CLAUDE.md` - Coverage requirements section
+
+## Related BDD Tests
+N/A - This verifies unit test coverage
+
+## Dependencies
+- [ ] All implementations complete (Issues #04-28)
+- [ ] All unit tests written
+- [ ] All BDD tests passing (Issue #31)
+
+---
+
+## Workflow Checklist
+
+### 1️⃣ Run Coverage Analysis
+- [ ] Run: `pytest --cov=app --cov-report=term-missing --cov-report=html`
+- [ ] Review coverage report in terminal
+- [ ] Open HTML report: `htmlcov/index.html`
+- [ ] Document coverage metrics
+
+### 2️⃣ Identify Coverage Gaps
+- [ ] Review any lines not covered
+- [ ] Review any branches not covered
+- [ ] Identify missing edge cases
+- [ ] Document gaps
+
+### 3️⃣ Fill Coverage Gaps
+- [ ] Write additional tests for uncovered lines
+- [ ] Write tests for uncovered branches
+- [ ] Test edge cases
+- [ ] Re-run coverage
+
+### 4️⃣ Verify 100% Coverage
+- [ ] Run: `pytest --cov=app --cov-fail-under=100 --cov-report=term-missing`
+- [ ] **Verify all metrics at 100%:**
+  - [ ] Branches: 100%
+  - [ ] Functions: 100%
+  - [ ] Lines: 100%
+  - [ ] Statements: 100%
+
+### 5️⃣ Generate Final Report
+- [ ] Generate HTML coverage report
+- [ ] Generate XML coverage report
+- [ ] Generate coverage badge (optional)
+- [ ] Document coverage metrics
+
+---
+
+## Acceptance Criteria
+
+### Coverage Requirements
+- [ ] Branches: 100%
+- [ ] Functions: 100%
+- [ ] Lines: 100%
+- [ ] Statements: 100%
+- [ ] All modules in `app/` covered
+- [ ] Coverage reports generated
+
+### Files Covered
+- [ ] `app/config.py` - 100%
+- [ ] `app/main.py` - 100%
+- [ ] `app/dependencies.py` - 100%
+- [ ] `app/models.py` - 100%
+- [ ] `app/utils/neo4j_client.py` - 100%
+- [ ] `app/utils/validators.py` - 100%
+- [ ] `app/routers/health.py` - 100%
+- [ ] `app/routers/query.py` - 100%
+- [ ] `app/routers/search.py` - 100%
+- [ ] `app/routers/nodes.py` - 100%
+- [ ] `app/routers/schema.py` - 100%
+
+### Exclusions (Not Required)
+- [ ] `tests/` - Tests themselves not measured
+- [ ] `features/` - BDD tests not measured
+- [ ] `__init__.py` files - Empty module inits excluded
+
+---
+
+## Implementation Notes
+
+### Coverage Configuration
+
+From `pyproject.toml`:
+```toml
+[tool.coverage.run]
+source = ["app"]
+omit = [
+    "tests/*",
+    "features/*",
+    "**/__init__.py",
+]
+
+[tool.coverage.report]
+fail_under = 100
+precision = 2
+show_missing = true
+skip_covered = false
+
+[[tool.coverage.report.exclude_lines]]
+pragma = "no cover"
+"def __repr__"
+"raise AssertionError"
+"raise NotImplementedError"
+"if __name__ == .__main__.:"
+"if TYPE_CHECKING:"
+"@abstractmethod"
+```
+
+### Running Coverage
+
+**Full coverage report:**
+```bash
+pytest --cov=app --cov-report=term-missing --cov-report=html --cov-report=xml
+```
+
+**Coverage by module:**
+```bash
+pytest --cov=app.config --cov-report=term-missing
+pytest --cov=app.routers.health --cov-report=term-missing
+pytest --cov=app.utils --cov-report=term-missing
+```
+
+**Fail if under 100%:**
+```bash
+pytest --cov=app --cov-fail-under=100
+```
+
+**View HTML report:**
+```bash
+open htmlcov/index.html  # macOS
+xdg-open htmlcov/index.html  # Linux
+```
+
+### Common Coverage Gaps
+
+1. **Exception handling branches** - Test both success and failure paths
+2. **Edge case validation** - Test boundary conditions
+3. **Error responses** - Test all error scenarios
+4. **Optional parameters** - Test with and without optional params
+5. **Context managers** - Test __enter__ and __exit__ paths
+6. **Async functions** - Ensure all async paths tested
+
+### Filling Coverage Gaps
+
+If coverage < 100%:
+1. Identify uncovered lines from report
+2. Write unit tests for those lines
+3. Ensure branch coverage (if/else both paths)
+4. Test exception handling
+5. Test edge cases
+6. Re-run coverage
+
+---
+
+## Git Workflow
+
+```bash
+git checkout main && git pull origin main
+git checkout -b issue/32-coverage-verification
+
+# Run coverage
+pytest --cov=app --cov-report=term-missing --cov-report=html --cov-report=xml
+
+# Review HTML report
+open htmlcov/index.html
+
+# If gaps found, write additional tests
+# tests/test_*.py - Add missing tests
+pytest --cov=app --cov-report=term-missing
+
+# Verify 100%
+pytest --cov=app --cov-fail-under=100
+
+# Generate final reports
+pytest --cov=app --cov-report=html --cov-report=xml --cov-report=term
+
+# Document results
+echo "Coverage Report" > coverage-summary.txt
+pytest --cov=app --cov-report=term >> coverage-summary.txt
+
+# Commit
+git add htmlcov/ coverage.xml coverage-summary.txt
+git commit -m "test(issue-32): verify 100% test coverage achieved"
+git push origin issue/32-coverage-verification
+```
+
+### Create Pull Request
+
+```bash
+gh pr create \
+  --title "test: verify 100% test coverage requirement met" \
+  --body "$(cat <<'EOF'
+## Summary
+- Verified 100% test coverage across all application code
+- All modules fully tested
+- Coverage reports generated
+
+## Coverage Metrics
+- Branches: 100% ✅
+- Functions: 100% ✅
+- Lines: 100% ✅
+- Statements: 100% ✅
+
+## Coverage by Module
+- app/config.py: 100% ✅
+- app/main.py: 100% ✅
+- app/dependencies.py: 100% ✅
+- app/models.py: 100% ✅
+- app/utils/neo4j_client.py: 100% ✅
+- app/utils/validators.py: 100% ✅
+- app/routers/health.py: 100% ✅
+- app/routers/query.py: 100% ✅
+- app/routers/search.py: 100% ✅
+- app/routers/nodes.py: 100% ✅
+- app/routers/schema.py: 100% ✅
+
+## Changes
+- [List any additional tests written to achieve 100%]
+- [Or: No changes needed - 100% already achieved]
+
+## Testing
+- [x] Unit tests pass (pytest)
+- [x] 100% coverage verified
+- [x] Coverage reports generated
+- [x] Pre-commit hooks pass
+
+## Closes
+Closes #32
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+EOF
+)"
+```
+
+---
+
+## Verification Commands
+
+```bash
+# Full coverage report
+pytest --cov=app --cov-report=term-missing --cov-report=html
+
+# Fail if under 100%
+pytest --cov=app --cov-fail-under=100
+
+# Coverage by module
+pytest --cov=app --cov-report=term-missing tests/test_config.py
+pytest --cov=app --cov-report=term-missing tests/test_health.py
+
+# View HTML report
+open htmlcov/index.html
+
+# Generate XML for CI/CD
+pytest --cov=app --cov-report=xml
+```
+
+---
+
+## References
+- **Coverage Config:** `pyproject.toml` - tool.coverage section
+- **Coverage Requirements:** `CLAUDE.md` - Coverage section
+- **pytest-cov docs:** https://pytest-cov.readthedocs.io/
+
+---
+
+## Notes
+- 100% coverage is REQUIRED before deployment
+- Coverage is enforced by pre-push Git hooks
+- HTML report helps identify missing coverage visually
+- XML report used for CI/CD integration
+- This completes Phase 7 (Integration & Polish)
+- Ready to proceed to Phase 8 (Deployment)

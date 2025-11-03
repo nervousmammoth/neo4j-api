@@ -1,0 +1,263 @@
+# Issue 08: Implement API Key Authentication Dependency
+
+## Status
+⏳ **TODO**
+
+**Estimated Time:** 2 hours
+**Branch:** `issue/08-api-key-dependency`
+**Phase:** 1 - Core Infrastructure
+
+## Description
+Implement `app/dependencies.py` with API key authentication dependency for FastAPI. This provides security middleware that validates X-API-Key header on protected endpoints.
+
+## Related Specifications
+- [ ] **Spec file:** `specs/authentication.md` - Complete authentication specification
+- [ ] **Spec file:** `specs/error-handling.md` - Section 3.1 (Authentication errors)
+
+## Related BDD Tests
+- [ ] **Feature file:** `features/authentication.feature`
+- [ ] **Scenarios:** All 13 scenarios
+- [ ] **Tags:** `@auth`, `@critical`
+
+## Dependencies
+- [ ] Issue #04 - Config module must exist
+- [ ] Issue #07 - ErrorResponse model must exist
+
+---
+
+## TDD Workflow Checklist
+
+### 1️⃣ RED - Write Failing Tests
+- [ ] Create test file: `tests/test_auth.py`
+- [ ] Write unit tests for verify_api_key()
+  - [ ] Test valid API key allows access
+  - [ ] Test invalid API key denies access (401)
+  - [ ] Test missing API key denies access (401)
+  - [ ] Test empty API key denies access
+  - [ ] Test header case insensitivity
+- [ ] Run tests: `pytest tests/test_auth.py -v`
+- [ ] **Verify tests FAIL** ❌
+
+### 2️⃣ GREEN - Implement Minimum Code
+- [ ] Implement in: `app/dependencies.py`
+- [ ] Implement verify_api_key() dependency
+  - [ ] Extract X-API-Key from header
+  - [ ] Compare with configured API key
+  - [ ] Raise HTTPException(401) if invalid/missing
+  - [ ] Return None if valid (dependency succeeds)
+- [ ] Run tests: `pytest tests/test_auth.py -v`
+- [ ] **Verify tests PASS** ✅
+
+### 3️⃣ REFACTOR - Improve Code Quality
+- [ ] Run black: `black app/ tests/`
+- [ ] Run ruff: `ruff check app/ tests/ --fix`
+- [ ] Run mypy: `mypy app/`
+- [ ] **Verify tests still pass** ✅
+
+### 4️⃣ BDD Validation (if applicable)
+- [ ] Run related BDD scenarios: `behave features/authentication.feature -v`
+- [ ] **Verify BDD scenarios pass** ✅
+
+### 5️⃣ Coverage Check
+- [ ] Run coverage: `pytest tests/test_auth.py --cov=app.dependencies --cov-report=term-missing`
+- [ ] **Verify 100% coverage** ✅
+
+---
+
+## Acceptance Criteria
+
+### Functional Requirements
+- [ ] verify_api_key() dependency function implemented
+- [ ] Validates X-API-Key header
+- [ ] Returns 401 if API key missing
+- [ ] Returns 401 if API key invalid
+- [ ] Allows request if API key valid
+- [ ] Case-insensitive header lookup
+- [ ] Clear error messages
+
+### Non-Functional Requirements
+- [ ] Unit tests written (TDD approach)
+- [ ] 100% code coverage
+- [ ] Type hints present (mypy compliant)
+- [ ] Code formatted (black)
+- [ ] Linting passed (ruff)
+- [ ] BDD scenarios pass
+- [ ] Documentation (docstrings)
+
+### Code Quality Gates
+- [ ] Pre-commit hooks pass
+- [ ] All pytest tests pass
+- [ ] Coverage >= 100%
+- [ ] No mypy errors
+- [ ] No ruff warnings
+
+---
+
+## Implementation Notes
+
+### Example Code Structure
+
+```python
+"""FastAPI dependency injection functions.
+
+This module provides dependencies for authentication, database connections,
+and other cross-cutting concerns.
+"""
+
+from __future__ import annotations
+
+from typing import Annotated
+
+from fastapi import Depends, Header, HTTPException, status
+
+from app.config import Settings, get_settings
+
+
+async def verify_api_key(
+    x_api_key: Annotated[str | None, Header()] = None,
+    settings: Settings = Depends(get_settings),
+) -> None:
+    """Verify API key from X-API-Key header.
+
+    Args:
+        x_api_key: API key from request header.
+        settings: Application settings.
+
+    Raises:
+        HTTPException: If API key is missing or invalid (401 Unauthorized).
+    """
+    if not x_api_key:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing API key. Provide X-API-Key header.",
+        )
+
+    if x_api_key != settings.api_key.get_secret_value():
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid API key.",
+        )
+```
+
+### Testing Strategy
+
+**Unit tests:**
+- Mock get_settings() to return test API key
+- Test with valid API key (should not raise exception)
+- Test with invalid API key (should raise 401)
+- Test with missing header (should raise 401)
+- Test with empty string (should raise 401)
+- Test error message content
+
+**Mocking approach:**
+- Use pytest fixtures for mock settings
+- Use TestClient with dependency override
+- Test as FastAPI dependency in route
+
+---
+
+## Git Workflow
+
+### Start Issue
+```bash
+git checkout main
+git pull origin main
+git checkout -b issue/08-api-key-dependency
+```
+
+### During Development
+```bash
+# TDD: Write tests first
+pytest tests/test_auth.py -v  # Should FAIL
+
+# Implement
+pytest tests/test_auth.py -v  # Should PASS
+
+# Refactor
+black app/ tests/
+ruff check app/ tests/ --fix
+mypy app/
+
+# BDD validation
+behave features/authentication.feature -v
+
+# Commit
+git add app/dependencies.py tests/test_auth.py
+git commit -m "feat(issue-08): implement API key authentication dependency"
+
+# Push
+git push origin issue/08-api-key-dependency
+```
+
+### Create Pull Request
+```bash
+gh pr create \
+  --title "feat: implement API key authentication dependency" \
+  --body "$(cat <<'EOF'
+## Summary
+- Implemented API key authentication dependency
+- Validates X-API-Key header
+- Returns 401 on missing/invalid keys
+- Full test coverage including BDD scenarios
+
+## Changes
+- Created verify_api_key() FastAPI dependency
+- Validates against configured API key
+- Clear error messages for auth failures
+- Complete unit and BDD test coverage
+
+## Testing
+- [x] Unit tests pass (pytest)
+- [x] BDD tests pass (behave - 13 scenarios)
+- [x] 100% coverage achieved
+- [x] Pre-commit hooks pass
+
+## Closes
+Closes #08
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+EOF
+)"
+```
+
+### After Merge
+```bash
+mv issues/08-api-key-dependency.md issues/completed/
+git checkout main
+git pull origin main
+```
+
+---
+
+## Verification Commands
+
+```bash
+# Run unit tests
+pytest tests/test_auth.py -v
+
+# Run with coverage
+pytest tests/test_auth.py --cov=app.dependencies --cov-report=term-missing
+
+# Run BDD scenarios
+behave features/authentication.feature -v
+
+# Run all quality checks
+pre-commit run --all-files
+```
+
+---
+
+## References
+- **Specification:** `specs/authentication.md`
+- **BDD Feature:** `features/authentication.feature`
+- **Error Handling:** `specs/error-handling.md` - Section 3.1
+- **Implementation Plan:** `IMPLEMENTATION_PLAN.md` - Phase 1
+
+---
+
+## Notes
+- This dependency will be used on all endpoints EXCEPT /api/health and /api/databases
+- FastAPI will automatically call this dependency before route handlers
+- The dependency uses Header() to extract X-API-Key (case-insensitive)
+- Comparison uses get_secret_value() to access SecretStr from settings
+- Clear error messages help API consumers debug authentication issues

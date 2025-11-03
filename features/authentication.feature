@@ -144,3 +144,24 @@ Feature: API Key Authentication
     Then the response status code should be 200
     When I send a GET request to "/api/investigation_001/graph/nodes/count" without authentication
     Then the response status code should be 403
+
+  # CORS and Audit Logging Tests
+
+  @auth @cors @headers
+  Scenario: API includes CORS headers for browser requests
+    Given the Neo4j database is connected
+    When I send a GET request to "/api/neo4j/graph/nodes/count" with header "Origin: https://example.com"
+    And I have a valid API key
+    Then the response status code should be 200
+    And the response should include CORS headers
+
+  @auth @audit @logging
+  Scenario: Successful authentication is logged for audit
+    Given audit logging is enabled
+    And the Neo4j database is connected
+    When I send a GET request to "/api/neo4j/graph/nodes/count" with valid API key
+    Then the response status code should be 200
+    And the audit log should contain:
+      | field     | value                         |
+      | event     | authentication_success        |
+      | endpoint  | /api/neo4j/graph/nodes/count |

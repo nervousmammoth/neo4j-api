@@ -110,3 +110,30 @@ Feature: Health & Metadata Endpoints
       | name        | investigation_cybercrime_001|
       | default     | false                       |
       | status      | online                      |
+
+  # Component-Level Status Tests
+
+  @health @monitoring @components
+  Scenario: Health check provides component-level status
+    Given the Neo4j database is connected
+    When I send a GET request to "/api/health"
+    Then the response status code should be 200
+    And the response should include components:
+      | component | status  |
+      | neo4j     | healthy |
+      | api       | healthy |
+
+  @health @error @connection-pool @critical
+  Scenario: Health check reports degraded when connection pool exhausted
+    Given the Neo4j connection pool is exhausted
+    When I send a GET request to "/api/health"
+    Then the response status code should be 503
+    And the JSON response should have field "status" with value "degraded"
+    And the component "neo4j" should have status "degraded"
+
+  @health @performance @concurrency
+  Scenario: Health check remains responsive under load
+    Given the Neo4j database is connected
+    When I send 20 concurrent GET requests to "/api/health"
+    Then all requests should return status code 200
+    And the response time should be less than 1000 milliseconds

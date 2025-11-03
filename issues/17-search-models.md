@@ -1,0 +1,129 @@
+# Issue 17: Implement Search Request/Response Models
+
+## Status
+⏳ **TODO**
+
+**Estimated Time:** 2 hours
+**Branch:** `issue/17-search-models`
+**Phase:** 4 - Search Endpoints
+
+## Description
+Implement Pydantic models for search endpoints in `app/models.py`: NodeSearchRequest, EdgeSearchRequest, SearchResponse following Linkurious format.
+
+## Related Specifications
+- [ ] **Spec file:** `specs/endpoints-search.md` - Complete specification
+- [ ] **Spec file:** `specs/data-models.md` - Section 4 (Search Models)
+
+## Related BDD Tests
+- [ ] **Feature file:** `features/search.feature`
+
+## Dependencies
+- [ ] Issue #07 - Base models exist
+
+---
+
+## TDD Workflow Checklist
+
+### 1️⃣ RED - Write Failing Tests
+- [ ] Add to: `tests/test_models.py`
+- [ ] Write tests for search models
+- [ ] Run tests: `pytest tests/test_models.py::test_search* -v`
+- [ ] **Verify tests FAIL** ❌
+
+### 2️⃣ GREEN - Implement
+- [ ] Add to: `app/models.py`
+- [ ] Implement Node/Edge base models
+- [ ] Implement SearchResponse model
+- [ ] **Verify tests PASS** ✅
+
+### 3️⃣ REFACTOR & Coverage
+- [ ] Run black, ruff, mypy
+- [ ] **Verify 100% coverage** ✅
+
+---
+
+## Acceptance Criteria
+
+### Functional Requirements
+- [ ] Node model with id, categories, properties
+- [ ] Edge model with id, type, source, target, properties
+- [ ] SearchResponse model with nodes/edges arrays
+- [ ] Field validation and JSON serialization
+
+### Code Quality
+- [ ] Unit tests, 100% coverage, type hints
+
+---
+
+## Implementation Notes
+
+```python
+class Node(BaseModel):
+    """Node representation in Linkurious format."""
+
+    id: str = Field(..., description="Node ID")
+    categories: list[str] = Field(..., description="Node labels")
+    properties: dict[str, Any] = Field(default_factory=dict)
+
+
+class Edge(BaseModel):
+    """Edge/Relationship representation in Linkurious format."""
+
+    id: str = Field(..., description="Relationship ID")
+    type: str = Field(..., description="Relationship type")
+    source: str = Field(..., description="Source node ID")
+    target: str = Field(..., description="Target node ID")
+    properties: dict[str, Any] = Field(default_factory=dict)
+
+
+class SearchResponse(BaseModel):
+    """Search results response."""
+
+    nodes: list[Node] = Field(default_factory=list)
+    edges: list[Edge] = Field(default_factory=list)
+    count: int = Field(..., ge=0)
+```
+
+---
+
+## Git Workflow
+
+```bash
+git checkout main
+git pull origin main
+git checkout -b issue/17-search-models
+
+# TDD cycle
+pytest tests/test_models.py::test_search* -v
+# Implement
+black app/ tests/
+ruff check app/ tests/ --fix
+mypy app/
+
+# Commit
+git add app/models.py tests/test_models.py
+git commit -m "feat(issue-17): implement search request/response models"
+git push origin issue/17-search-models
+```
+
+---
+
+## Verification Commands
+
+```bash
+pytest tests/test_models.py -v
+python -c "from app.models import Node, Edge, SearchResponse; print('Models OK')"
+```
+
+---
+
+## References
+- **Specification:** `specs/endpoints-search.md`
+- **Data Models:** `specs/data-models.md` - Section 4
+
+---
+
+## Notes
+- Node/Edge models follow Linkurious format exactly
+- These models will be reused across multiple endpoints
+- Properties dict allows arbitrary key-value pairs

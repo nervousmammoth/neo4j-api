@@ -230,3 +230,72 @@ Feature: Cypher Query Execution
       """
     Then the response status code should be 200
     And the query should execute successfully
+
+  # Cypher Injection Prevention Tests
+
+  @query @security @injection @critical
+  Scenario Outline: API prevents Cypher injection attacks
+    When I execute the Cypher query with malicious input:
+      """
+      MATCH (n:Person {name: '<injection>'}) RETURN n
+      """
+    Then the query should be safely parameterized
+    And no unauthorized operations should execute
+
+    Examples:
+      | injection                                     |
+      | '}) DELETE (n) //                             |
+      | '}) MERGE (x:Admin {role:'admin'}) RETURN x //|
+
+  @query @limits @critical
+  Scenario: API enforces maximum result size
+    Given the database contains 100000 nodes
+    When I execute the Cypher query:
+      """
+      MATCH (n) RETURN n
+      """
+    Then the response status code should be 400
+    And the error code should be "RESULT_SIZE_EXCEEDED"
+    And the error message should contain "maximum result size"
+
+  @query @timeout @configuration
+  Scenario Outline: Query timeout is configurable per request
+    When I execute a Cypher query with timeout <timeout> seconds:
+      """
+      MATCH (n) RETURN n LIMIT 1000
+      """
+    Then the query should respect the timeout setting
+
+    Examples:
+      | timeout |
+      | 5       |
+      | 30      |
+      | 60      |
+
+  @query @explain @performance
+  Scenario: Get query execution plan without executing
+    When I request to explain the Cypher query:
+      """
+      MATCH (n:Person)-[:WORKS_FOR]->(c:Company)
+      RETURN n, c
+      """
+    Then the response status code should be 200
+    And the response should include query plan
+    And the query should not be executed
+
+  @query @concurrency
+  Scenario: API handles concurrent query execution
+    Given the database contains 1000 nodes
+    When I send 10 concurrent POST requests to "/api/neo4j/graph/query"
+    Then all requests should return status code 200 or 400
+    And none of the requests should return status code 500
+
+  @query @compression
+  Scenario: Large query results are compressed
+    Given the database contains 1000 nodes
+    When I execute the Cypher query:
+      """
+      MATCH (n) RETURN n LIMIT 1000
+      """
+    And I send a GET request to "/api/neo4j/graph/query" with header "Accept-Encoding: gzip"
+    Then the response should be compressed
