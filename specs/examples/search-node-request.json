@@ -1,0 +1,11 @@
+{
+  "description": "Search for nodes by name with fuzzy matching",
+  "endpoint": "GET /api/neo4j/search/node/full",
+  "query_parameters": {
+    "q": "Alice",
+    "fuzziness": 0.7
+  },
+  "headers": {
+    "X-API-Key": "your-secret-api-key"
+  }
+}

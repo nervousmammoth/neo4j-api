@@ -1,0 +1,108 @@
+# Issue 27: Implement Node Types Schema Endpoint
+
+## Status
+⏳ **TODO**
+
+**Estimated Time:** 2 hours
+**Branch:** `issue/27-schema-node-types-endpoint`
+**Phase:** 6 - Schema Endpoints
+
+## Description
+Implement `GET /api/{database}/graph/schema/node/types` endpoint to retrieve all node labels from the database schema.
+
+## Related Specifications
+- [ ] **Spec file:** `specs/endpoints-schema.md` - Section 1 (Node Types)
+
+## Related BDD Tests
+- [ ] **Feature file:** `features/schema.feature`
+- [ ] **Tags:** `@schema`, `@node_types`
+
+## Dependencies
+- [ ] Issue #26 - Schema models
+
+---
+
+## TDD Workflow Checklist
+
+### 1️⃣ RED - Write Failing Tests
+- [ ] Create: `tests/test_schema.py`
+- [ ] Write tests for GET /api/{database}/graph/schema/node/types
+- [ ] **Verify tests FAIL** ❌
+
+### 2️⃣ GREEN - Implement
+- [ ] Create: `app/routers/schema.py`
+- [ ] Implement node types endpoint
+- [ ] Register router in app/main.py
+- [ ] **Verify tests PASS** ✅
+
+### 3️⃣ REFACTOR & BDD
+- [ ] Run black, ruff, mypy
+- [ ] Run: `behave features/schema.feature --tags=@node_types -v`
+- [ ] **Verify 100% coverage** ✅
+
+---
+
+## Acceptance Criteria
+
+### Functional Requirements
+- [ ] GET /api/{database}/graph/schema/node/types endpoint
+- [ ] Returns NodeTypeResponse with all labels
+- [ ] Requires authentication
+
+---
+
+## Implementation Notes
+
+```python
+"""Schema discovery endpoints."""
+
+from fastapi import APIRouter, Depends, Path
+
+from app.dependencies import get_neo4j_client, verify_api_key
+from app.models import NodeTypeResponse, EdgeTypeResponse
+from app.utils.neo4j_client import Neo4jClient
+
+router = APIRouter(
+    prefix="/api/{database}/graph/schema",
+    tags=["schema"],
+    dependencies=[Depends(verify_api_key)],
+)
+
+
+@router.get("/node/types", response_model=NodeTypeResponse)
+async def get_node_types(
+    database: str = Path(...),
+    client: Neo4jClient = Depends(get_neo4j_client),
+) -> NodeTypeResponse:
+    """Get all node labels in the database."""
+
+    query = "CALL db.labels() YIELD label RETURN label"
+    results = client.execute_query(query=query, database=database)
+
+    labels = [record["label"] for record in results]
+
+    return NodeTypeResponse(labels=labels, count=len(labels))
+```
+
+---
+
+## Git Workflow
+
+```bash
+git checkout main && git pull origin main
+git checkout -b issue/27-schema-node-types-endpoint
+
+# TDD, implement, test
+pytest tests/test_schema.py -v
+behave features/schema.feature --tags=@node_types -v
+
+# Commit
+git add app/routers/schema.py app/main.py tests/test_schema.py
+git commit -m "feat(issue-27): implement node types schema endpoint"
+git push origin issue/27-schema-node-types-endpoint
+```
+
+---
+
+## References
+- **Specification:** `specs/endpoints-schema.md` - Section 1

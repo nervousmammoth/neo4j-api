@@ -1,0 +1,12 @@
+{
+  "types": [
+    "Person",
+    "Company",
+    "Product",
+    "Order",
+    "Invoice",
+    "Address",
+    "Department",
+    "Project"
+  ]
+}

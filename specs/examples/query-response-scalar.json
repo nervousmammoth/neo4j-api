@@ -1,0 +1,15 @@
+{
+  "nodes": [],
+  "edges": [],
+  "truncatedByLimit": false,
+  "meta": {
+    "query_type": "r",
+    "records_returned": 1,
+    "execution_time_ms": 12,
+    "scalar_result": {
+      "total_persons": 150,
+      "average_age": 32.5,
+      "total_companies": 45
+    }
+  }
+}

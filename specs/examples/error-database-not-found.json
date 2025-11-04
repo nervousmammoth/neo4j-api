@@ -1,0 +1,14 @@
+{
+  "error": {
+    "code": "DATABASE_NOT_FOUND",
+    "message": "Database 'nonexistent_db' not found",
+    "details": {
+      "database": "nonexistent_db",
+      "available_databases": [
+        "neo4j",
+        "system",
+        "investigation_001"
+      ]
+    }
+  }
+}

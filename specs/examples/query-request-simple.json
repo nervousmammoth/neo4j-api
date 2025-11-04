@@ -1,0 +1,3 @@
+{
+  "query": "MATCH (p:Person) RETURN p LIMIT 10"
+}

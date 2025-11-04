@@ -1,0 +1,10 @@
+{
+  "error": {
+    "code": "NODE_NOT_FOUND",
+    "message": "Node with ID '12345' not found",
+    "details": {
+      "node_id": "12345",
+      "database": "neo4j"
+    }
+  }
+}

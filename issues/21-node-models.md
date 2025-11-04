@@ -1,0 +1,106 @@
+# Issue 21: Implement Node Operation Response Models
+
+## Status
+⏳ **TODO**
+
+**Estimated Time:** 1 hour
+**Branch:** `issue/21-node-models`
+**Phase:** 5 - Node Operations
+
+## Description
+Implement additional Pydantic models for node operations: NodeDetailResponse, ExpandResponse, CountResponse.
+
+## Related Specifications
+- [ ] **Spec file:** `specs/endpoints-nodes.md`
+- [ ] **Spec file:** `specs/data-models.md` - Section 5
+
+## Related BDD Tests
+- [ ] **Feature file:** `features/nodes.feature`
+
+## Dependencies
+- [ ] Issue #17 - Node/Edge models exist
+
+---
+
+## TDD Workflow Checklist
+
+### 1️⃣ RED - Write Failing Tests
+- [ ] Add to: `tests/test_models.py`
+- [ ] Write tests for node operation models
+- [ ] **Verify tests FAIL** ❌
+
+### 2️⃣ GREEN - Implement
+- [ ] Add to: `app/models.py`
+- [ ] **Verify tests PASS** ✅
+
+### 3️⃣ REFACTOR & Coverage
+- [ ] Run black, ruff, mypy
+- [ ] **Verify 100% coverage** ✅
+
+---
+
+## Acceptance Criteria
+
+### Functional Requirements
+- [ ] NodeDetailResponse model
+- [ ] ExpandResponse model (nodes + edges)
+- [ ] CountResponse model
+
+---
+
+## Implementation Notes
+
+```python
+class NodeDetailResponse(BaseModel):
+    """Single node detail response."""
+
+    node: Node = Field(..., description="Node details")
+
+
+class ExpandRequest(BaseModel):
+    """Node expansion request."""
+
+    node_ids: list[str] = Field(..., min_length=1, description="Node IDs to expand")
+    direction: str = Field(default="both", pattern="^(in|out|both)$")
+    max_depth: int = Field(default=1, ge=1, le=3)
+
+
+class ExpandResponse(BaseModel):
+    """Node expansion response with neighborhood."""
+
+    nodes: list[Node] = Field(default_factory=list)
+    edges: list[Edge] = Field(default_factory=list)
+    count: int = Field(..., ge=0)
+
+
+class CountResponse(BaseModel):
+    """Count response."""
+
+    count: int = Field(..., ge=0, description="Total count")
+```
+
+---
+
+## Git Workflow
+
+```bash
+git checkout main && git pull origin main
+git checkout -b issue/21-node-models
+
+# TDD, implement
+pytest tests/test_models.py::test_node* -v
+black app/ tests/
+ruff check app/ tests/ --fix
+mypy app/
+
+# Commit
+git add app/models.py tests/test_models.py
+git commit -m "feat(issue-21): implement node operation response models"
+git push origin issue/21-node-models
+```
+
+---
+
+## References
+- **Specification:** `specs/endpoints-nodes.md`
+- **Data Models:** `specs/data-models.md` - Section 5

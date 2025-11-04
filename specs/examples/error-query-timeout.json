@@ -1,0 +1,10 @@
+{
+  "error": {
+    "code": "QUERY_TIMEOUT",
+    "message": "Query execution exceeded timeout limit",
+    "details": {
+      "timeout_seconds": 60,
+      "query": "MATCH (n)-[*10..20]-(m) RETURN n, m"
+    }
+  }
+}

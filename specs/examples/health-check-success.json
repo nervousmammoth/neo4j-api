@@ -1,0 +1,5 @@
+{
+  "status": "healthy",
+  "neo4j": "connected",
+  "version": "1.0.0"
+}

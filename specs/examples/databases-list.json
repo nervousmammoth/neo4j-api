@@ -1,0 +1,28 @@
+{
+  "databases": [
+    {
+      "name": "neo4j",
+      "default": true,
+      "status": "online",
+      "description": "Default database"
+    },
+    {
+      "name": "system",
+      "default": false,
+      "status": "online",
+      "description": "System database"
+    },
+    {
+      "name": "investigation_fraud_2024",
+      "default": false,
+      "status": "online",
+      "description": "Fraud investigation case 2024"
+    },
+    {
+      "name": "investigation_cybercrime_001",
+      "default": false,
+      "status": "online",
+      "description": "Cybercrime investigation case 001"
+    }
+  ]
+}

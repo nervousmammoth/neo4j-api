@@ -1,0 +1,11 @@
+{
+  "description": "Search for relationships by property",
+  "endpoint": "GET /api/neo4j/search/edge/full",
+  "query_parameters": {
+    "q": "Engineer",
+    "fuzziness": 0.5
+  },
+  "headers": {
+    "X-API-Key": "your-secret-api-key"
+  }
+}
