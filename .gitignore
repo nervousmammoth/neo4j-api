@@ -2,19 +2,6 @@
 .claude/
 *.local.json
 
-# Development workflow files (internal planning)
-BDD_SETUP_SUMMARY.md
-IMPLEMENTATION_PLAN.md
-ISSUE_WORKFLOW_SETUP_COMPLETE.md
-*-plan.md
-*-summary.md
-
-# Issue tracking (use GitHub Issues instead)
-issues/
-
-# API specifications (internal)
-specs/
-
 # Python
 __pycache__/
 *.py[cod]

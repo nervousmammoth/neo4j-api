@@ -27,68 +27,6 @@ print_section() {
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
 }
 
-# Check for protected markdown files FIRST (before expensive operations)
-print_section "🔒 Checking for Protected Markdown Files"
-
-# Get the range of commits being pushed
-# Format: $remote_sha..$local_sha
-while read local_ref local_sha remote_ref remote_sha; do
-    if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
-        # New branch, check all commits
-        range="$local_sha"
-    else
-        # Existing branch, check new commits
-        range="$remote_sha..$local_sha"
-    fi
-
-    # Get list of markdown files in commits being pushed
-    md_files=$(git diff --name-only --diff-filter=ACM $range 2>/dev/null | grep '\.md$' || true)
-
-    if [ -n "$md_files" ]; then
-        echo -e "${BLUE}Found markdown files in commits:${NC}"
-        echo "$md_files" | sed 's/^/  /'
-        echo ""
-
-        # Filter to only forbidden patterns:
-        # - Files in issues/ directory (issue tracking)
-        # - Files in .claude/ directory (Claude config)
-        # - Files ending with -plan.md (project plans)
-        # - Files ending with -summary.md (summaries)
-        # BUT allow:
-        # - README.md (project documentation)
-        # - CLAUDE.md (Claude Code instructions)
-        # - Files in specs/ directory (API specifications)
-        forbidden_files=$(echo "$md_files" | grep -E '^issues/|^\.claude/|.*-plan\.md$|.*-summary\.md$' | grep -v -E '^README\.md$|^CLAUDE\.md$|^specs/' || true)
-
-        if [ -n "$forbidden_files" ]; then
-            echo -e "${RED}❌ Push blocked: Protected markdown files detected${NC}\n"
-            echo -e "${RED}The following files should remain local-only:${NC}"
-            echo "$forbidden_files" | sed 's/^/  /'
-            echo ""
-            echo -e "${YELLOW}💡 Why? These files are kept local to:${NC}"
-            echo -e "${YELLOW}   • Keep issue tracking and planning docs local${NC}"
-            echo -e "${YELLOW}   • Prevent cluttering the remote repository${NC}"
-            echo -e "${YELLOW}   • Maintain clean git history focused on code${NC}"
-            echo -e "${YELLOW}   • Keep Claude Code instructions accessible locally${NC}"
-            echo ""
-            echo -e "${YELLOW}📝 To fix this:${NC}"
-            echo -e "${YELLOW}   1. Remove files from the last commit:${NC}"
-            echo -e "${YELLOW}      git reset --soft HEAD~1${NC}"
-            echo -e "${YELLOW}   2. Unstage the forbidden files:${NC}"
-            echo "$forbidden_files" | sed 's/^/      git reset /'
-            echo -e "${YELLOW}   3. Commit again without these files${NC}"
-            echo -e "${YELLOW}   4. Push again${NC}"
-            echo ""
-            echo -e "${YELLOW}🔧 To bypass this check (NOT recommended): git push --no-verify${NC}"
-            exit 1
-        fi
-
-        echo -e "${GREEN}✅ All markdown files are allowed${NC}"
-    else
-        echo -e "${GREEN}✅ No markdown files in commits${NC}"
-    fi
-done < /dev/stdin
-
 # Check if virtual environment is activated
 if [[ -z "${VIRTUAL_ENV}" ]]; then
     echo -e "${YELLOW}⚠️  Warning: Virtual environment not activated${NC}"
