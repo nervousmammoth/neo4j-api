@@ -27,21 +27,6 @@ print_section() {
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
 }
 
-# Check if virtual environment is activated
-if [[ -z "${VIRTUAL_ENV}" ]]; then
-    echo -e "${YELLOW}⚠️  Warning: Virtual environment not activated${NC}"
-    echo -e "${YELLOW}   Attempting to activate venv...${NC}"
-    if [ -d "venv/bin" ]; then
-        source venv/bin/activate
-    elif [ -d ".venv/bin" ]; then
-        source .venv/bin/activate
-    else
-        echo -e "${RED}❌ Error: No virtual environment found${NC}"
-        echo -e "${RED}   Please create a virtual environment: python3 -m venv venv${NC}"
-        exit 1
-    fi
-fi
-
 # Check if app/ directory exists
 if [ ! -d "app" ]; then
     echo -e "${YELLOW}⚠️  Warning: app/ directory does not exist yet${NC}"
@@ -61,6 +46,21 @@ fi
 # 1. Run unit tests with 100% coverage requirement
 if [ "$SKIP_UNIT_TESTS" = false ]; then
     print_section "🧪 Running Unit Tests with 100% Coverage Requirement"
+
+    # Check for virtual environment only when running tests
+    if [[ -z "${VIRTUAL_ENV}" ]]; then
+        echo -e "${YELLOW}⚠️  Warning: Virtual environment not activated${NC}"
+        echo -e "${YELLOW}   Attempting to activate venv...${NC}"
+        if [ -d "venv/bin" ]; then
+            source venv/bin/activate
+        elif [ -d ".venv/bin" ]; then
+            source .venv/bin/activate
+        else
+            echo -e "${RED}❌ Error: No virtual environment found${NC}"
+            echo -e "${RED}   Please create a virtual environment: python3 -m venv venv${NC}"
+            exit 1
+        fi
+    fi
 
     if ! pytest tests/ \
         --cov=app \
