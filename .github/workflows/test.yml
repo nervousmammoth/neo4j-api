@@ -11,7 +11,7 @@ jobs:
   unit-tests:
     name: Unit Tests (pytest)
     runs-on: ubuntu-latest
-    if: hashFiles('app/**/*.py') != ''
+    if: ${{ hashFiles('app/**/*.py') != '' }}
 
     steps:
       - uses: actions/checkout@v3
@@ -123,23 +123,23 @@ jobs:
           pip install -r requirements-dev.txt
 
       - name: Run Black (formatter check)
-        if: hashFiles('app/**/*.py') != ''
+        if: ${{ hashFiles('app/**/*.py') != '' }}
         run: black --check app/ tests/ features/
 
       - name: Run Black (features only)
-        if: hashFiles('app/**/*.py') == ''
+        if: ${{ hashFiles('app/**/*.py') == '' }}
         run: black --check features/
 
       - name: Run Ruff (linter)
-        if: hashFiles('app/**/*.py') != ''
+        if: ${{ hashFiles('app/**/*.py') != '' }}
         run: ruff check app/ tests/ features/
 
       - name: Run Ruff (features only)
-        if: hashFiles('app/**/*.py') == ''
+        if: ${{ hashFiles('app/**/*.py') == '' }}
         run: ruff check features/
 
       - name: Run mypy (type checking)
-        if: hashFiles('app/**/*.py') != ''
+        if: ${{ hashFiles('app/**/*.py') != '' }}
         run: mypy app/ --strict
 
   # Summary Job
