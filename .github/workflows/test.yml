@@ -11,6 +11,7 @@ jobs:
   unit-tests:
     name: Unit Tests (pytest)
     runs-on: ubuntu-latest
+    if: hashFiles('app/**/*.py') != ''
 
     steps:
       - uses: actions/checkout@v3
@@ -51,7 +52,7 @@ jobs:
           name: codecov-umbrella
 
       - name: Archive coverage reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-reports-unit
           path: htmlcov/
@@ -60,7 +61,11 @@ jobs:
   bdd-tests:
     name: BDD Acceptance Tests (behave)
     runs-on: ubuntu-latest
-    needs: unit-tests  # Run after unit tests pass
+    needs: unit-tests
+    if: |
+      always() &&
+      (needs.unit-tests.result == 'success' || needs.unit-tests.result == 'skipped') &&
+      hashFiles('app/**/*.py') != ''
 
     steps:
       - uses: actions/checkout@v3
@@ -93,7 +98,7 @@ jobs:
           behave features/ --format=pretty --format=html --outfile=reports/behave/index.html --format=json --outfile=reports/behave/results.json
 
       - name: Upload BDD test reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: bdd-test-reports
@@ -118,12 +123,23 @@ jobs:
           pip install -r requirements-dev.txt
 
       - name: Run Black (formatter check)
+        if: hashFiles('app/**/*.py') != ''
         run: black --check app/ tests/ features/
 
+      - name: Run Black (features only)
+        if: hashFiles('app/**/*.py') == ''
+        run: black --check features/
+
       - name: Run Ruff (linter)
+        if: hashFiles('app/**/*.py') != ''
         run: ruff check app/ tests/ features/
 
+      - name: Run Ruff (features only)
+        if: hashFiles('app/**/*.py') == ''
+        run: ruff check features/
+
       - name: Run mypy (type checking)
+        if: hashFiles('app/**/*.py') != ''
         run: mypy app/ --strict
 
   # Summary Job
@@ -140,9 +156,10 @@ jobs:
           echo "✅ BDD Tests: ${{ needs.bdd-tests.result }}"
           echo "✅ Code Quality: ${{ needs.code-quality.result }}"
 
-          if [[ "${{ needs.unit-tests.result }}" != "success" ]] || \
-             [[ "${{ needs.bdd-tests.result }}" != "success" ]] || \
-             [[ "${{ needs.code-quality.result }}" != "success" ]]; then
+          # Check if any job failed (skipped is OK when app/ doesn't exist)
+          if [[ "${{ needs.unit-tests.result }}" == "failure" ]] || \
+             [[ "${{ needs.bdd-tests.result }}" == "failure" ]] || \
+             [[ "${{ needs.code-quality.result }}" == "failure" ]]; then
             echo "❌ Some tests failed"
             exit 1
           fi

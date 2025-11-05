@@ -45,7 +45,7 @@ Client → Caddy (:80) → FastAPI (:8000) → Neo4j (:7687)
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/nervousmammoth/neo4j-api.git
 cd neo4j-api
 
 # Create and activate virtual environment
@@ -130,7 +130,7 @@ curl -X POST \
 ```
 neo4j-api/
 ├── specs/                  # API specifications (source of truth)
-├── features/               # BDD acceptance tests (6 files, 92 scenarios)
+├── features/               # BDD acceptance tests (6 files, 137 scenarios)
 ├── app/                    # FastAPI application
 │   ├── main.py             # FastAPI app with lifespan
 │   ├── config.py           # Settings via pydantic-settings
@@ -166,8 +166,7 @@ This project enforces code quality through Git hooks:
 - Conventional commits validation
 
 **Pre-push** (runs on every push):
-- pytest - Unit tests with 100% coverage
-- behave - BDD test suite
+- pytest - Unit tests with 100% coverage (when app/ exists)
 
 Setup hooks with: `./scripts/setup_hooks.sh`
 
@@ -193,6 +192,7 @@ behave features/health.feature -v
 black app/ tests/ features/             # Format code
 ruff check app/ tests/ features/        # Lint
 mypy app/                               # Type check
+bandit -r app/                          # Security scan
 ```
 
 ### Testing Strategy
@@ -206,7 +206,7 @@ mypy app/                               # Type check
 
 2. **BDD Tests (behave)** - Test complete user scenarios
    - 6 feature files: health, authentication, search, query, nodes, schema
-   - 92 scenarios total
+   - 137 scenarios total (91 scenarios + 12 scenario outlines with 46 example rows)
    - Reusable step definitions in `features/steps/`
    - Tags: @smoke, @critical, @error, @auth, @search, @query, etc.
 
@@ -282,7 +282,7 @@ Reload Caddy: `sudo systemctl reload caddy`
 
 ## Testing Statistics
 
-- **BDD Scenarios**: 92 scenarios across 6 feature files
+- **BDD Scenarios**: 137 scenarios across 6 feature files (91 scenarios + 12 scenario outlines with 46 example rows)
 - **Step Definitions**: ~100 reusable steps
 - **Coverage Requirement**: 100% for all metrics
 - **Test Execution Time**: ~2-3 minutes for full suite
@@ -297,10 +297,6 @@ Reload Caddy: `sudo systemctl reload caddy`
 6. Create pull request with conventional commit format
 
 See [CLAUDE.md](CLAUDE.md) for detailed contribution guidelines.
-
-## License
-
-[Add your license information here]
 
 ## Acknowledgments
 
