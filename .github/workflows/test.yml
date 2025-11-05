@@ -33,7 +33,7 @@ jobs:
 
       - name: Cache dependencies
         if: steps.check_app.outputs.exists == 'true'
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
@@ -59,7 +59,7 @@ jobs:
 
       - name: Upload coverage to Codecov
         if: steps.check_app.outputs.exists == 'true'
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           files: ./coverage.xml
           flags: unittests
@@ -100,7 +100,7 @@ jobs:
 
       - name: Cache dependencies
         if: steps.check_app.outputs.exists == 'true'
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
