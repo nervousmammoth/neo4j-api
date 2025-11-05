@@ -33,7 +33,7 @@ neo4j-api/
 │   └── data-models.md      # Request/response models
 │
 ├── features/               # BDD acceptance tests (Gherkin)
-│   ├── *.feature           # 6 feature files, 92 scenarios
+│   ├── *.feature           # 6 feature files, 137 scenarios (91 + 12 outlines w/ 46 examples)
 │   ├── steps/              # Step definitions (~100 reusable steps)
 │   └── environment.py      # Test setup/teardown
 │
