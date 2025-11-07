@@ -29,7 +29,7 @@ def before_all(context):
     # Environment variables for testing
     os.environ["API_KEY"] = context.test_config["api_key"]
     os.environ["NEO4J_URI"] = "bolt://localhost:7687"
-    os.environ["NEO4J_USER"] = "neo4j"
+    os.environ["NEO4J_USERNAME"] = "neo4j"
     os.environ["NEO4J_PASSWORD"] = "password"
 
     print("=" * 80)
