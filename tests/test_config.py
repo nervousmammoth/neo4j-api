@@ -105,31 +105,24 @@ class TestSettingsValidation:
         monkeypatch.setenv("NEO4J_PASSWORD", "password123")
         monkeypatch.setenv("API_KEY", "test-api-key")
 
-    def test_valid_bolt_uri_accepted(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """Test that valid bolt:// URI is accepted."""
-        valid_uris = [
+    @pytest.mark.parametrize(
+        "uri",
+        [
             "bolt://localhost:7687",
             "bolt+s://localhost:7687",
             "bolt+ssc://localhost:7687",
-        ]
-
-        for uri in valid_uris:
-            monkeypatch.setenv("NEO4J_URI", uri)
-            settings = Settings()
-            assert settings.neo4j_uri == uri
-
-    def test_valid_neo4j_uri_accepted(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """Test that valid neo4j:// URI is accepted."""
-        valid_uris = [
             "neo4j://localhost:7687",
             "neo4j+s://localhost:7687",
             "neo4j+ssc://localhost:7687",
-        ]
-
-        for uri in valid_uris:
-            monkeypatch.setenv("NEO4J_URI", uri)
-            settings = Settings()
-            assert settings.neo4j_uri == uri
+        ],
+    )
+    def test_valid_uri_schemes_accepted(
+        self, monkeypatch: pytest.MonkeyPatch, uri: str
+    ) -> None:
+        """Test that valid bolt:// and neo4j:// URI schemes are accepted."""
+        monkeypatch.setenv("NEO4J_URI", uri)
+        settings = Settings()
+        assert settings.neo4j_uri == uri
 
     def test_invalid_uri_scheme_rejected(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test that invalid URI scheme is rejected."""
@@ -360,6 +353,27 @@ class TestSettingsEdgeCases:
         monkeypatch.setenv("NEO4J_USERNAME", "")
         with pytest.raises(ValidationError):
             Settings()
+
+    def test_empty_api_key_rejected(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test that empty API key is rejected."""
+        monkeypatch.setenv("API_KEY", "")
+        with pytest.raises(ValidationError) as exc_info:
+            Settings()
+
+        errors = exc_info.value.errors()
+        assert any("API key cannot be empty" in str(error) for error in errors)
+
+    def test_whitespace_api_key_rejected(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test that whitespace-only API key is rejected."""
+        whitespace_keys = ["   ", "\t", "\n", "  \t\n  "]
+
+        for key in whitespace_keys:
+            monkeypatch.setenv("API_KEY", key)
+            with pytest.raises(ValidationError) as exc_info:
+                Settings()
+
+            errors = exc_info.value.errors()
+            assert any("API key cannot be empty" in str(error) for error in errors)
 
     def test_boundary_values_accepted(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test that boundary values are correctly handled."""

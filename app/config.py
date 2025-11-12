@@ -7,6 +7,7 @@ loading values from environment variables and .env files.
 from __future__ import annotations
 
 from functools import lru_cache
+from typing import ClassVar
 
 from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -18,6 +19,15 @@ class Settings(BaseSettings):  # type: ignore[misc]
     Settings are loaded from environment variables and .env file.
     Environment variables take precedence over .env file values.
     """
+
+    # Valid log levels
+    _VALID_LOG_LEVELS: ClassVar[set[str]] = {
+        "debug",
+        "info",
+        "warning",
+        "error",
+        "critical",
+    }
 
     # Neo4j Connection
     neo4j_uri: str = Field(..., description="Neo4j connection URI")
@@ -65,7 +75,7 @@ class Settings(BaseSettings):  # type: ignore[misc]
         Raises:
             ValueError: If URI is empty or doesn't start with bolt:// or neo4j:// scheme.
         """
-        if not v or not v.strip():
+        if not v.strip():
             raise ValueError("Neo4j URI cannot be empty")
         if not v.startswith(
             (
@@ -94,8 +104,26 @@ class Settings(BaseSettings):  # type: ignore[misc]
         Raises:
             ValueError: If username is empty.
         """
-        if not v or not v.strip():
+        if not v.strip():
             raise ValueError("Neo4j username cannot be empty")
+        return v
+
+    @field_validator("api_key")
+    @classmethod
+    def validate_api_key(cls, v: SecretStr) -> SecretStr:
+        """Validate API key is not empty.
+
+        Args:
+            v: The API key to validate.
+
+        Returns:
+            The validated API key.
+
+        Raises:
+            ValueError: If API key is empty or contains only whitespace.
+        """
+        if not v.get_secret_value().strip():
+            raise ValueError("API key cannot be empty")
         return v
 
     @field_validator("log_level")
@@ -112,9 +140,8 @@ class Settings(BaseSettings):  # type: ignore[misc]
         Raises:
             ValueError: If log level is not one of the valid levels.
         """
-        valid_levels = {"debug", "info", "warning", "error", "critical"}
-        if v.lower() not in valid_levels:
-            raise ValueError(f"Log level must be one of: {valid_levels}")
+        if v.lower() not in cls._VALID_LOG_LEVELS:
+            raise ValueError(f"Log level must be one of: {cls._VALID_LOG_LEVELS}")
         return v.lower()
 
 
