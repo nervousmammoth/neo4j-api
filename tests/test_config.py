@@ -139,10 +139,27 @@ class TestSettingsValidation:
                 Settings()
 
             errors = exc_info.value.errors()
+            assert any("Neo4j URI must use one of:" in str(error) for error in errors)
+
+    def test_malformed_uri_rejected(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test that malformed Neo4j URIs are rejected."""
+        malformed_uris = [
+            ("bolt://", "Neo4j URI must include a host"),
+            ("bolt://localhost:", "Invalid Neo4j URI format"),
+            ("bolt://localhost:99999", "Neo4j URI port must be between 1 and 65535"),
+            ("bolt://localhost:0", "Neo4j URI port must be between 1 and 65535"),
+            ("neo4j://", "Neo4j URI must include a host"),
+        ]
+
+        for uri, expected_error in malformed_uris:
+            monkeypatch.setenv("NEO4J_URI", uri)
+            with pytest.raises(ValidationError) as exc_info:
+                Settings()
+
+            errors = exc_info.value.errors()
             assert any(
-                "Neo4j URI must start with bolt:// or neo4j:// scheme" in str(error)
-                for error in errors
-            )
+                expected_error in str(error) for error in errors
+            ), f"Expected error '{expected_error}' not found for URI '{uri}'"
 
     def test_valid_log_levels_accepted(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test that valid log levels are accepted."""
@@ -374,6 +391,33 @@ class TestSettingsEdgeCases:
 
             errors = exc_info.value.errors()
             assert any("API key cannot be empty" in str(error) for error in errors)
+
+    def test_empty_neo4j_password_rejected(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Test that empty Neo4j password is rejected."""
+        monkeypatch.setenv("NEO4J_PASSWORD", "")
+        with pytest.raises(ValidationError) as exc_info:
+            Settings()
+
+        errors = exc_info.value.errors()
+        assert any("Neo4j password cannot be empty" in str(error) for error in errors)
+
+    def test_whitespace_neo4j_password_rejected(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Test that whitespace-only Neo4j password is rejected."""
+        whitespace_passwords = ["   ", "\t", "\n", "  \t\n  "]
+
+        for password in whitespace_passwords:
+            monkeypatch.setenv("NEO4J_PASSWORD", password)
+            with pytest.raises(ValidationError) as exc_info:
+                Settings()
+
+            errors = exc_info.value.errors()
+            assert any(
+                "Neo4j password cannot be empty" in str(error) for error in errors
+            )
 
     def test_boundary_values_accepted(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test that boundary values are correctly handled."""

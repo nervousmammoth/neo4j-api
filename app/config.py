@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 from typing import ClassVar
+from urllib.parse import urlparse
 
 from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -73,21 +74,47 @@ class Settings(BaseSettings):  # type: ignore[misc]
             The validated URI.
 
         Raises:
-            ValueError: If URI is empty or doesn't start with bolt:// or neo4j:// scheme.
+            ValueError: If URI is empty, has invalid scheme, no host, or invalid port.
         """
         if not v.strip():
             raise ValueError("Neo4j URI cannot be empty")
-        if not v.startswith(
-            (
-                "bolt://",
-                "bolt+s://",
-                "bolt+ssc://",
-                "neo4j://",
-                "neo4j+s://",
-                "neo4j+ssc://",
-            )
-        ):
-            raise ValueError("Neo4j URI must start with bolt:// or neo4j:// scheme")
+
+        valid_schemes = ("bolt", "bolt+s", "bolt+ssc", "neo4j", "neo4j+s", "neo4j+ssc")
+
+        try:
+            parsed = urlparse(v)
+            if parsed.scheme not in valid_schemes:
+                raise ValueError(
+                    f"Neo4j URI must use one of: {', '.join(valid_schemes)}"
+                )
+            if not parsed.netloc:
+                raise ValueError("Neo4j URI must include a host")
+
+            # Validate port if colon is present
+            if ":" in parsed.netloc:
+                try:
+                    port = parsed.port
+                    if port is None:
+                        # Colon present but no port number
+                        raise ValueError(
+                            "Invalid Neo4j URI format: port number missing after ':'"
+                        )
+                    if not (1 <= port <= 65535):
+                        raise ValueError("Neo4j URI port must be between 1 and 65535")
+                except ValueError as port_error:
+                    # urlparse raises ValueError for invalid ports (e.g., > 65535)
+                    if "Port out of range" in str(port_error):
+                        raise ValueError(
+                            "Neo4j URI port must be between 1 and 65535"
+                        ) from port_error
+                    raise
+        except ValueError:
+            # Re-raise ValueError messages
+            raise
+        except Exception as e:
+            # Catch any unexpected exceptions
+            raise ValueError(f"Invalid Neo4j URI format: {e}") from e
+
         return v
 
     @field_validator("neo4j_username")
@@ -106,6 +133,24 @@ class Settings(BaseSettings):  # type: ignore[misc]
         """
         if not v.strip():
             raise ValueError("Neo4j username cannot be empty")
+        return v
+
+    @field_validator("neo4j_password")
+    @classmethod
+    def validate_neo4j_password(cls, v: SecretStr) -> SecretStr:
+        """Validate Neo4j password is not empty.
+
+        Args:
+            v: The Neo4j password to validate.
+
+        Returns:
+            The validated password.
+
+        Raises:
+            ValueError: If password is empty or contains only whitespace.
+        """
+        if not v.get_secret_value().strip():
+            raise ValueError("Neo4j password cannot be empty")
         return v
 
     @field_validator("api_key")
