@@ -14,7 +14,7 @@ from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class Settings(BaseSettings):  # type: ignore[misc]
+class Settings(BaseSettings):
     """Application settings loaded from environment variables.
 
     Settings are loaded from environment variables and .env file.
@@ -197,4 +197,4 @@ def get_settings() -> Settings:
     Returns:
         Settings instance loaded from environment.
     """
-    return Settings()
+    return Settings()  # type: ignore[call-arg]

@@ -221,11 +221,3 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = "responses.*"
 ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "pydantic_settings"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "pydantic"
-ignore_missing_imports = true
