@@ -60,6 +60,7 @@ repos:
         additional_dependencies:
           - types-requests
           - pydantic>=2.8.0
+          - pydantic-settings>=2.4.0
         args: [--strict, --config-file=pyproject.toml]
         exclude: ^(tests/|features/|scripts/)
 

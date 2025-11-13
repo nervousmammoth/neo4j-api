@@ -5,14 +5,17 @@ HTTP request/response step definitions for behave BDD tests.
 import json
 import time
 
-from behave import then, when
+from behave import then, use_step_matcher, when
 
 # ============================================================================
 # WHEN Steps - HTTP Requests
 # ============================================================================
 
+# Use regex matcher to avoid ambiguity between request patterns
+use_step_matcher("re")
 
-@when('I send a {method} request to "{endpoint}"')
+
+@when(r'I send a (?P<method>\w+) request to "(?P<endpoint>[^"]+)"')
 def step_send_request(context, method, endpoint):
     """Send HTTP request without authentication."""
     context.start_time = time.time()
@@ -29,7 +32,7 @@ def step_send_request(context, method, endpoint):
     context.end_time = time.time()
 
 
-@when('I send a {method} request to "{endpoint}" with authentication')
+@when(r'I send a (?P<method>\w+) request to "(?P<endpoint>[^"]+)" with authentication')
 def step_send_authenticated_request(context, method, endpoint):
     """Send HTTP request with API key authentication."""
     headers = {"X-API-Key": context.api_key}
@@ -47,7 +50,9 @@ def step_send_authenticated_request(context, method, endpoint):
     context.end_time = time.time()
 
 
-@when('I send a {method} request to "{endpoint}" without authentication')
+@when(
+    r'I send a (?P<method>\w+) request to "(?P<endpoint>[^"]+)" without authentication'
+)
 def step_send_unauthenticated_request(context, method, endpoint):
     """Send HTTP request explicitly without authentication."""
     context.start_time = time.time()
@@ -60,7 +65,7 @@ def step_send_unauthenticated_request(context, method, endpoint):
     context.end_time = time.time()
 
 
-@when('I send a {method} request to "{endpoint}" with headers')
+@when(r'I send a (?P<method>\w+) request to "(?P<endpoint>[^"]+)" with headers')
 def step_send_request_with_headers(context, method, endpoint):
     """Send HTTP request with custom headers from table."""
     headers = {}
@@ -77,7 +82,9 @@ def step_send_request_with_headers(context, method, endpoint):
     context.end_time = time.time()
 
 
-@when('I send a {method} request to "{endpoint}" with authentication and body')
+@when(
+    r'I send a (?P<method>\w+) request to "(?P<endpoint>[^"]+)" with authentication and body'
+)
 def step_send_request_with_body(context, method, endpoint):
     """Send HTTP request with authentication and JSON body."""
     headers = {"X-API-Key": context.api_key, "Content-Type": "application/json"}
@@ -91,6 +98,10 @@ def step_send_request_with_body(context, method, endpoint):
         context.response = context.client.put(endpoint, headers=headers, json=body)
 
     context.end_time = time.time()
+
+
+# Switch back to parse matcher for THEN steps
+use_step_matcher("parse")
 
 
 # ============================================================================
@@ -354,7 +365,11 @@ def step_check_json_schema(context, schema_name):
 # ============================================================================
 
 
-@then('the response should have header "{header}"')
+# Use regex matcher to avoid ambiguity between header steps
+use_step_matcher("re")
+
+
+@then(r'the response should have header "(?P<header>[^"]+)"')
 def step_check_response_header(context, header):
     """Verify response has specific header."""
     # Mock implementation - real client would have headers attribute
@@ -369,7 +384,9 @@ def step_check_response_header(context, header):
         print("Warning: Header checking not implemented in mock client")
 
 
-@then('the response should have header "{header}" with value "{value}"')
+@then(
+    r'the response should have header "(?P<header>[^"]+)" with value "(?P<value>[^"]+)"'
+)
 def step_check_response_header_value(context, header, value):
     """Verify response header has specific value."""
     if hasattr(context.response, "headers"):
@@ -378,6 +395,10 @@ def step_check_response_header_value(context, header, value):
         assert actual == value, f"Header '{header}': expected '{value}', got '{actual}'"
     else:
         print("Warning: Header checking not implemented in mock client")
+
+
+# Switch back to parse matcher
+use_step_matcher("parse")
 
 
 @then("the response should include CORS headers")
@@ -455,8 +476,16 @@ def step_send_concurrent_requests(context, count, method, endpoint):
     context.end_time = time.time()
 
 
-@when('I send a {method} request with header "{header}: {value}"')
-@when('I send a {method} request to "{endpoint}" with header "{header}: {value}"')
+# Use regex matcher for header steps to avoid ambiguity
+use_step_matcher("re")
+
+
+@when(
+    r'I send a (?P<method>\w+) request with header "(?P<header>[^:]+): (?P<value>[^"]+)"'
+)
+@when(
+    r'I send a (?P<method>\w+) request to "(?P<endpoint>[^"]+)" with header "(?P<header>[^:]+): (?P<value>[^"]+)"'
+)
 def step_send_request_with_single_header(
     context, method, endpoint=None, header=None, value=None
 ):
@@ -476,6 +505,10 @@ def step_send_request_with_single_header(
         context.response = context.client.post(endpoint, headers=headers)
 
     context.end_time = time.time()
+
+
+# Switch back to parse matcher
+use_step_matcher("parse")
 
 
 # ============================================================================

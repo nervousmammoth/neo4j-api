@@ -2,7 +2,7 @@
 Neo4j database-specific step definitions.
 """
 
-from behave import given, then, when
+from behave import given, then, use_step_matcher, when
 
 # ============================================================================
 # GIVEN Steps - Neo4j Database State
@@ -195,8 +195,11 @@ def step_schema_queries_will_fail(context):
 # WHEN Steps - Search Operations
 # ============================================================================
 
+# Use regex matcher to avoid ambiguity between search patterns
+use_step_matcher("re")
 
-@when('I search for nodes with query "{query}"')
+
+@when(r'I search for nodes with query "(?P<query>[^"]+)"')
 def step_search_nodes(context, query):
     """Perform node search."""
     endpoint = f"/api/neo4j/search/node/full?q={query}"
@@ -204,7 +207,9 @@ def step_search_nodes(context, query):
     context.response = context.client.get(endpoint, headers=headers)
 
 
-@when('I search for nodes with query "{query}" and fuzziness {fuzziness:f}')
+@when(
+    r'I search for nodes with query "(?P<query>[^"]+)" and fuzziness (?P<fuzziness>[\d.]+)'
+)
 def step_search_nodes_with_fuzziness(context, query, fuzziness):
     """Perform fuzzy node search."""
     endpoint = f"/api/neo4j/search/node/full?q={query}&fuzziness={fuzziness}"
@@ -212,7 +217,7 @@ def step_search_nodes_with_fuzziness(context, query, fuzziness):
     context.response = context.client.get(endpoint, headers=headers)
 
 
-@when('I search for nodes with query "{query}" and parameters')
+@when(r'I search for nodes with query "(?P<query>[^"]+)" and parameters')
 def step_search_nodes_with_params(context, query):
     """Perform node search with additional parameters."""
     params = {}
@@ -227,7 +232,9 @@ def step_search_nodes_with_params(context, query):
     context.response = context.client.get(endpoint, headers=headers)
 
 
-@when('I search for nodes with query "{query}" in database "{database}"')
+@when(
+    r'I search for nodes with query "(?P<query>[^"]+)" in database "(?P<database>[^"]+)"'
+)
 def step_search_nodes_in_database(context, query, database):
     """Perform node search in specific database."""
     endpoint = f"/api/{database}/search/node/full?q={query}"
@@ -235,12 +242,16 @@ def step_search_nodes_in_database(context, query, database):
     context.response = context.client.get(endpoint, headers=headers)
 
 
-@when('I search for edges with query "{query}"')
+@when(r'I search for edges with query "(?P<query>[^"]+)"')
 def step_search_edges(context, query):
     """Perform edge/relationship search."""
     endpoint = f"/api/neo4j/search/edge/full?q={query}"
     headers = {"X-API-Key": context.api_key}
     context.response = context.client.get(endpoint, headers=headers)
+
+
+# Switch back to parse matcher
+use_step_matcher("parse")
 
 
 # ============================================================================

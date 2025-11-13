@@ -2,7 +2,7 @@
 Common step definitions shared across all features.
 """
 
-from behave import given, then
+from behave import given, then, use_step_matcher
 
 # ============================================================================
 # GIVEN Steps - Test Setup
@@ -440,7 +440,12 @@ def step_check_first_result_fields_table(context):
         ), f"Field '{field}': expected '{expected_value}', got '{actual}'"
 
 
-@then('the first result should have field "{field}"')
+# Use regex matcher for these steps to avoid ambiguity
+# The first pattern needs to explicitly NOT match when followed by "as" or "with"
+use_step_matcher("re")
+
+
+@then(r'the first result should have field "(?P<field>[^"]+)"')
 def step_check_first_result_has_field(context, field):
     """Check first result has a specific field."""
     response_data = context.response.json()
@@ -451,8 +456,9 @@ def step_check_first_result_has_field(context, field):
     assert field in first_result, f"Field '{field}' not found in first result"
 
 
-@then('the first result should have field "{field}" as an {field_type}')
-@then('the first result should have field "{field}" as a {field_type}')
+@then(
+    r'the first result should have field "(?P<field>[^"]+)" as an? (?P<field_type>\w+)'
+)
 def step_check_first_result_field_type(context, field, field_type):
     """Check type of field in first result."""
     response_data = context.response.json()
@@ -478,7 +484,9 @@ def step_check_first_result_field_type(context, field, field_type):
         ), f"Field '{field}' should be string, got {type(actual)}"
 
 
-@then('the first result should have field "{field}" with value "{value}"')
+@then(
+    r'the first result should have field "(?P<field>[^"]+)" with value "(?P<value>[^"]+)"'
+)
 def step_check_first_result_field_value(context, field, value):
     """Check field value in first result."""
     response_data = context.response.json()
@@ -496,3 +504,7 @@ def step_check_first_result_field_value(context, field, value):
     assert str(actual) == str(
         value
     ), f"Field '{field}': expected '{value}', got '{actual}'"
+
+
+# Switch back to parse matcher for remaining steps
+use_step_matcher("parse")
