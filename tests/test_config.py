@@ -124,6 +124,23 @@ class TestSettingsValidation:
         settings = Settings()
         assert settings.neo4j_uri == uri
 
+    @pytest.mark.parametrize(
+        "uri",
+        [
+            "bolt://localhost",
+            "bolt+s://example.com",
+            "neo4j://db.example.com",
+            "neo4j+ssc://127.0.0.1",
+        ],
+    )
+    def test_valid_uri_without_port_accepted(
+        self, monkeypatch: pytest.MonkeyPatch, uri: str
+    ) -> None:
+        """Test that valid URIs without explicit port are accepted."""
+        monkeypatch.setenv("NEO4J_URI", uri)
+        settings = Settings()
+        assert settings.neo4j_uri == uri
+
     def test_invalid_uri_scheme_rejected(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test that invalid URI scheme is rejected."""
         invalid_uris = [

@@ -111,8 +111,8 @@ class Settings(BaseSettings):  # type: ignore[misc]
         except ValueError:
             # Re-raise ValueError messages
             raise
-        except Exception as e:
-            # Catch any unexpected exceptions
+        except Exception as e:  # pragma: no cover
+            # Catch any unexpected exceptions from urlparse (defensive programming)
             raise ValueError(f"Invalid Neo4j URI format: {e}") from e
 
         return v
