@@ -72,7 +72,6 @@ omit = [
     "app/main.py",
     "app/models.py",
     "app/routers/*.py",
-    "app/utils/neo4j_client.py",
     "app/utils/validators.py",
 ]
 
