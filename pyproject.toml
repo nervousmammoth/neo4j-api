@@ -72,7 +72,6 @@ omit = [
     "app/main.py",
     "app/models.py",
     "app/routers/*.py",
-    "app/utils/validators.py",
 ]
 
 # CRITICAL: 100% coverage required for all metrics
