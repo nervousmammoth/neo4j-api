@@ -9,21 +9,14 @@ from __future__ import annotations
 import re
 from re import Pattern
 
-# Forbidden write keywords (word boundaries required)
-WRITE_KEYWORDS: list[str] = [
-    r"\bCREATE\b",
-    r"\bDELETE\b",
-    r"\bMERGE\b",
-    r"\bSET\b",
-    r"\bREMOVE\b",
-    r"\bDROP\b",
-    r"\bDETACH\s+DELETE\b",
-]
+# Combined write keywords pattern for performance
+# A single combined pattern is more performant than a list of patterns
+_WRITE_KEYWORDS_PATTERN = (
+    r"\b(CREATE|DELETE|MERGE|SET|REMOVE|DROP)\b|\bDETACH\s+DELETE\b"
+)
 
-# Compile patterns for performance
-WRITE_PATTERNS: list[Pattern[str]] = [
-    re.compile(keyword, re.IGNORECASE) for keyword in WRITE_KEYWORDS
-]
+# Compile the single pattern for performance
+WRITE_PATTERN: Pattern[str] = re.compile(_WRITE_KEYWORDS_PATTERN, re.IGNORECASE)
 
 
 def _remove_comments(query: str) -> str:
@@ -46,6 +39,7 @@ def _remove_string_literals(query: str) -> str:
     """Remove string literals from query.
 
     This prevents false positives from keywords inside strings.
+    Handles escaped quotes within strings to prevent bypass attacks.
 
     Args:
         query: Cypher query string.
@@ -53,10 +47,10 @@ def _remove_string_literals(query: str) -> str:
     Returns:
         Query with string literals removed.
     """
-    # Remove single-quoted strings
-    query = re.sub(r"'[^']*'", "", query)
-    # Remove double-quoted strings
-    query = re.sub(r'"[^"]*"', "", query)
+    # Remove single-quoted strings (handles escaped quotes like \')
+    query = re.sub(r"'[^'\\]*(?:\\.[^'\\]*)*'", "", query)
+    # Remove double-quoted strings (handles escaped quotes like \")
+    query = re.sub(r'"[^"\\]*(?:\\.[^"\\]*)*"', "", query)
     return query
 
 
@@ -88,4 +82,4 @@ def is_read_only_query(query: str) -> bool:
     cleaned_query = _remove_string_literals(cleaned_query)
 
     # Check for write keywords - return True if no write patterns found
-    return all(not pattern.search(cleaned_query) for pattern in WRITE_PATTERNS)
+    return not WRITE_PATTERN.search(cleaned_query)

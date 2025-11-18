@@ -200,3 +200,8 @@ class TestIsReadOnlyQueryEdgeCases:
         """DETACH DELETE in mixed case should be blocked."""
         query = "MATCH (n) DeTaCh DeLeTe n"
         assert is_read_only_query(query) is False
+
+    def test_keyword_in_string_with_escaped_quote(self) -> None:
+        """Keywords in strings with escaped quotes should not trigger."""
+        query = "MATCH (n) WHERE n.text = 'fake\\'; DELETE' RETURN n"
+        assert is_read_only_query(query) is True
