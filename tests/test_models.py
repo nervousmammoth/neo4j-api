@@ -269,3 +269,10 @@ class TestSuccessResponseModel:
 
         assert response.success is True
         assert response.message == "Database updated"
+
+    def test_success_response_rejects_success_false(self) -> None:
+        """Test that SuccessResponse raises a validation error for success=False."""
+        with pytest.raises(ValidationError) as exc_info:
+            SuccessResponse(success=False)  # type: ignore[arg-type]
+
+        assert "success" in str(exc_info.value)
