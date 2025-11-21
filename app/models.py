@@ -5,7 +5,7 @@ This module contains all data models following Linkurious API format.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -93,7 +93,7 @@ class SuccessResponse(BaseModel):
         {'success': True, 'message': 'Operation completed successfully'}
     """
 
-    success: bool = Field(default=True, description="Success indicator")
+    success: Literal[True] = Field(default=True, description="Success indicator")
     message: str | None = Field(default=None, description="Optional success message")
 
     model_config = {

@@ -207,7 +207,7 @@ class TestErrorResponseModel:
     def test_error_response_validation_requires_error(self) -> None:
         """Test that ErrorResponse requires error field."""
         with pytest.raises(ValidationError) as exc_info:
-            ErrorResponse()
+            ErrorResponse(**{})  # type: ignore[arg-type]
 
         assert "error" in str(exc_info.value)
 
@@ -269,11 +269,3 @@ class TestSuccessResponseModel:
 
         assert response.success is True
         assert response.message == "Database updated"
-
-    def test_success_response_allows_success_false(self) -> None:
-        """Test that SuccessResponse allows success=False (even if unusual)."""
-        # While unusual for a "SuccessResponse", the model should allow it
-        response = SuccessResponse(success=False, message="Not really a success")
-
-        assert response.success is False
-        assert response.message == "Not really a success"
