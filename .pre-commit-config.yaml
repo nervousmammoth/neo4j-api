@@ -61,6 +61,7 @@ repos:
           - types-requests
           - pydantic>=2.8.0
           - pydantic-settings>=2.4.0
+          - fastapi>=0.115.0
         args: [--strict, --config-file=pyproject.toml]
         exclude: ^(tests/|features/|scripts/)
 

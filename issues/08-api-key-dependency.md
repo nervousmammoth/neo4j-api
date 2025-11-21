@@ -69,8 +69,8 @@ Implement `app/dependencies.py` with API key authentication dependency for FastA
 ### Functional Requirements
 - [ ] verify_api_key() dependency function implemented
 - [ ] Validates X-API-Key header
-- [ ] Returns 401 if API key missing
-- [ ] Returns 401 if API key invalid
+- [ ] Returns 403 if API key missing
+- [ ] Returns 403 if API key invalid
 - [ ] Allows request if API key valid
 - [ ] Case-insensitive header lookup
 - [ ] Clear error messages
@@ -124,17 +124,17 @@ async def verify_api_key(
         settings: Application settings.
 
     Raises:
-        HTTPException: If API key is missing or invalid (401 Unauthorized).
+        HTTPException: If API key is missing or invalid (403 Forbidden).
     """
     if not x_api_key:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_code=status.HTTP_403_FORBIDDEN,
             detail="Missing API key. Provide X-API-Key header.",
         )
 
     if x_api_key != settings.api_key.get_secret_value():
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_code=status.HTTP_403_FORBIDDEN,
             detail="Invalid API key.",
         )
 ```
@@ -144,10 +144,10 @@ async def verify_api_key(
 **Unit tests:**
 - Mock get_settings() to return test API key
 - Test with valid API key (should not raise exception)
-- Test with invalid API key (should raise 401)
-- Test with missing header (should raise 401)
-- Test with empty string (should raise 401)
-- Test error message content
+- Test with invalid API key (should raise 403)
+- Test with missing header (should raise 403)
+- Test with empty string (should raise 403)
+- Test error message content (structured ErrorResponse format)
 
 **Mocking approach:**
 - Use pytest fixtures for mock settings
@@ -261,3 +261,8 @@ pre-commit run --all-files
 - The dependency uses Header() to extract X-API-Key (case-insensitive)
 - Comparison uses get_secret_value() to access SecretStr from settings
 - Clear error messages help API consumers debug authentication issues
+
+**IMPORTANT UPDATES:**
+- **Status Code:** Using 403 Forbidden (per specs/authentication.md and specs/error-handling.md) instead of 401 Unauthorized
+- **Response Format:** Using structured ErrorResponse model format with error.code, error.message, error.details
+- **Logging:** Authentication logging is DEFERRED to a future issue. BDD scenarios requiring logging will be skipped/pending
