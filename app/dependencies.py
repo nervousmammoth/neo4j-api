@@ -6,6 +6,7 @@ and other cross-cutting concerns.
 
 from __future__ import annotations
 
+import secrets
 from typing import Annotated
 
 from fastapi import Depends, Header, HTTPException
@@ -46,20 +47,20 @@ async def verify_api_key(
             detail={
                 "error": {
                     "code": "MISSING_API_KEY",
-                    "message": "API key is required for this endpoint",
+                    "message": "API key is required",
                     "details": {"header": "X-API-Key"},
                 }
             },
         )
 
-    # Check if API key matches configured value (case-sensitive)
-    if x_api_key != settings.api_key.get_secret_value():
+    # Check if API key matches configured value (case-sensitive, constant-time)
+    if not secrets.compare_digest(x_api_key, settings.api_key.get_secret_value()):
         raise HTTPException(
             status_code=403,
             detail={
                 "error": {
                     "code": "INVALID_API_KEY",
-                    "message": "The provided API key is invalid",
+                    "message": "Invalid API key provided",
                 }
             },
         )

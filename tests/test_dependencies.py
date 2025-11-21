@@ -55,7 +55,7 @@ class TestVerifyApiKey:
         assert "error" in exc_info.value.detail
         error = exc_info.value.detail["error"]
         assert error["code"] == "INVALID_API_KEY"
-        assert error["message"] == "The provided API key is invalid"
+        assert error["message"] == "Invalid API key provided"
         assert "details" not in error  # No details for invalid key
 
     @pytest.mark.asyncio
@@ -78,7 +78,7 @@ class TestVerifyApiKey:
         assert "error" in exc_info.value.detail
         error = exc_info.value.detail["error"]
         assert error["code"] == "MISSING_API_KEY"
-        assert error["message"] == "API key is required for this endpoint"
+        assert error["message"] == "API key is required"
         assert error["details"] == {"header": "X-API-Key"}
 
     @pytest.mark.asyncio
@@ -101,7 +101,7 @@ class TestVerifyApiKey:
         assert "error" in exc_info.value.detail
         error = exc_info.value.detail["error"]
         assert error["code"] == "MISSING_API_KEY"
-        assert error["message"] == "API key is required for this endpoint"
+        assert error["message"] == "API key is required"
         assert error["details"] == {"header": "X-API-Key"}
 
     @pytest.mark.asyncio
@@ -124,7 +124,7 @@ class TestVerifyApiKey:
         assert "error" in exc_info.value.detail
         error = exc_info.value.detail["error"]
         assert error["code"] == "MISSING_API_KEY"
-        assert error["message"] == "API key is required for this endpoint"
+        assert error["message"] == "API key is required"
 
     @pytest.mark.asyncio
     async def test_api_key_validation_is_case_sensitive(
