@@ -70,7 +70,7 @@ omit = [
     # Skeleton files - will be implemented in future issues
     "app/dependencies.py",
     "app/main.py",
-    "app/models.py",
+    # app/models.py - IMPLEMENTED in Issue 07
     "app/routers/*.py",
 ]
 
