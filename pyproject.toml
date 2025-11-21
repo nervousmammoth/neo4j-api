@@ -68,7 +68,7 @@ omit = [
     "*/__init__.py",
     "*/conftest.py",
     # Skeleton files - will be implemented in future issues
-    "app/dependencies.py",
+    # app/dependencies.py - IMPLEMENTED in Issue 08
     "app/main.py",
     # app/models.py - IMPLEMENTED in Issue 07
     "app/routers/*.py",
