@@ -8,9 +8,9 @@ from __future__ import annotations
 
 from contextlib import asynccontextmanager
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 
 from app.config import get_settings
 from app.utils.neo4j_client import Neo4jClient
@@ -20,12 +20,9 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-# Global Neo4j client instance
-neo4j_client: Neo4jClient | None = None
-
 
 @asynccontextmanager
-async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Manage application lifespan.
 
     Startup:
@@ -36,33 +33,34 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         - Close Neo4j client
 
     Args:
-        _app: FastAPI application instance (unused, required by signature).
+        app: FastAPI application instance.
 
     Yields:
         None
     """
-    global neo4j_client
-
     # Startup
     settings = get_settings()
     logger.info("Starting Neo4j API application")
 
     try:
-        neo4j_client = Neo4jClient(settings)
-        if neo4j_client.verify_connectivity():
+        client = Neo4jClient(settings)
+        if client.verify_connectivity():
             logger.info("Neo4j connectivity verified")
+            app.state.neo4j_client = client
         else:
             logger.warning("Neo4j connectivity check failed")
+            client.close()
+            app.state.neo4j_client = None
     except Exception as e:
         logger.error("Failed to initialize Neo4j client: %s", e)
-        neo4j_client = None
+        app.state.neo4j_client = None
 
     yield
 
     # Shutdown
     logger.info("Shutting down Neo4j API application")
-    if neo4j_client:
-        neo4j_client.close()
+    if hasattr(app.state, "neo4j_client") and app.state.neo4j_client:
+        app.state.neo4j_client.close()
         logger.info("Neo4j client closed")
 
 
@@ -79,8 +77,11 @@ app = FastAPI(
 )
 
 
-def get_neo4j_client() -> Neo4jClient:
+def get_neo4j_client(request: Request) -> Neo4jClient:
     """Get Neo4j client instance.
+
+    Args:
+        request: FastAPI request object.
 
     Returns:
         Neo4j client instance.
@@ -88,9 +89,12 @@ def get_neo4j_client() -> Neo4jClient:
     Raises:
         RuntimeError: If Neo4j client not initialized.
     """
-    if neo4j_client is None:
+    if (
+        not hasattr(request.app.state, "neo4j_client")
+        or request.app.state.neo4j_client is None
+    ):
         raise RuntimeError("Neo4j client not initialized")
-    return neo4j_client
+    return cast(Neo4jClient, request.app.state.neo4j_client)
 
 
 # Routers will be added in subsequent issues:

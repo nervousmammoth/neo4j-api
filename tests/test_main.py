@@ -85,7 +85,8 @@ async def test_lifespan_creates_neo4j_client(
 
         async with lifespan(test_app):
             # During lifespan, client should be created and connectivity verified
-            pass
+            assert hasattr(test_app.state, "neo4j_client")
+            assert test_app.state.neo4j_client is mock_neo4j_client_class
 
         # Verify Neo4jClient was instantiated
         # Verify connectivity was checked
@@ -109,17 +110,18 @@ async def test_lifespan_closes_neo4j_client(
         test_app = FastAPI()
 
         async with lifespan(test_app):
-            pass
+            # Client should be set during lifespan
+            assert test_app.state.neo4j_client is mock_neo4j_client_class
 
         # After lifespan exits, client should be closed
         mock_neo4j_client_class.close.assert_called_once()
 
 
 @pytest.mark.asyncio
-async def test_lifespan_handles_neo4j_initialization_error(
+async def test_lifespan_handles_connectivity_check_exception(
     settings_fixture: Settings,
 ) -> None:
-    """Test that lifespan handles Neo4j initialization errors gracefully.
+    """Test that lifespan handles exceptions during connectivity check.
 
     Args:
         settings_fixture: Test settings fixture.
@@ -134,10 +136,33 @@ async def test_lifespan_handles_neo4j_initialization_error(
 
         # Should not raise, just log error
         async with lifespan(test_app):
-            pass
+            # Client should be set to None after exception
+            assert hasattr(test_app.state, "neo4j_client")
+            assert test_app.state.neo4j_client is None
 
         # Client creation was attempted
         mock_client.verify_connectivity.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_lifespan_handles_client_creation_error(
+    settings_fixture: Settings,
+) -> None:
+    """Test that lifespan handles exceptions during Neo4j client creation.
+
+    Args:
+        settings_fixture: Test settings fixture.
+    """
+    with patch("app.main.Neo4jClient", side_effect=Exception("Invalid configuration")):
+        from app.main import lifespan
+
+        test_app = FastAPI()
+
+        # Should not raise, just log error
+        async with lifespan(test_app):
+            # Client should be set to None after creation error
+            assert hasattr(test_app.state, "neo4j_client")
+            assert test_app.state.neo4j_client is None
 
 
 @pytest.mark.asyncio
@@ -159,11 +184,13 @@ async def test_lifespan_handles_neo4j_connectivity_failure(
 
         # Should not raise, just log warning
         async with lifespan(test_app):
-            pass
+            # Client should be set to None after connectivity failure
+            assert hasattr(test_app.state, "neo4j_client")
+            assert test_app.state.neo4j_client is None
 
         # Connectivity check was attempted
         mock_client.verify_connectivity.assert_called_once()
-        # Client should still be closed even if verification failed
+        # Client should be closed immediately when verification fails
         mock_client.close.assert_called_once()
 
 
@@ -177,14 +204,16 @@ def test_get_neo4j_client_returns_client(
         settings_fixture: Test settings fixture.
         mock_neo4j_client_class: Mock Neo4jClient class.
     """
-    import app.main
+    from app.main import app, get_neo4j_client
 
-    # Set global client
-    app.main.neo4j_client = mock_neo4j_client_class
+    # Set client in app state
+    app.state.neo4j_client = mock_neo4j_client_class
 
-    from app.main import get_neo4j_client
+    # Create mock request
+    mock_request = MagicMock()
+    mock_request.app = app
 
-    client = get_neo4j_client()
+    client = get_neo4j_client(mock_request)
     assert client is mock_neo4j_client_class
 
 
@@ -196,15 +225,17 @@ def test_get_neo4j_client_raises_when_not_initialized(
     Args:
         settings_fixture: Test settings fixture.
     """
-    import app.main
+    from app.main import app, get_neo4j_client
 
-    # Set global client to None
-    app.main.neo4j_client = None
+    # Set client to None in app state
+    app.state.neo4j_client = None
 
-    from app.main import get_neo4j_client
+    # Create mock request
+    mock_request = MagicMock()
+    mock_request.app = app
 
     with pytest.raises(RuntimeError, match="Neo4j client not initialized"):
-        get_neo4j_client()
+        get_neo4j_client(mock_request)
 
 
 def test_app_has_lifespan_configured(settings_fixture: Settings) -> None:
