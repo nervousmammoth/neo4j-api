@@ -69,7 +69,7 @@ omit = [
     "*/conftest.py",
     # Skeleton files - will be implemented in future issues
     # app/dependencies.py - IMPLEMENTED in Issue 08
-    "app/main.py",
+    # app/main.py - IMPLEMENTED in Issue 09
     # app/models.py - IMPLEMENTED in Issue 07
     "app/routers/*.py",
 ]
