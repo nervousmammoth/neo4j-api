@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-A **Linkurious-compatible REST API** for Neo4j Enterprise multi-database instances built with FastAPI. The project follows **Specification-Driven Development** and **Test-Driven Development (TDD)** with a dual testing strategy: **pytest** for unit tests and **behave** for BDD acceptance tests.
+A **Linkurious-compatible REST API** for Neo4j Enterprise multi-database instances built with FastAPI. The project follows **Specification-Driven Development** and **Test-Driven Development (TDD)** using **pytest** for unit and integration tests with 100% coverage enforcement.
 
 **Key Constraint:** The API is **read-only** - all write operations (CREATE, DELETE, MERGE, SET, REMOVE) are blocked by query validation.
 
@@ -32,12 +32,7 @@ neo4j-api/
 │   ├── authentication.md   # Auth specification
 │   └── data-models.md      # Request/response models
 │
-├── features/               # BDD acceptance tests (Gherkin)
-│   ├── *.feature           # 6 feature files, 137 scenarios (91 + 12 outlines w/ 46 examples)
-│   ├── steps/              # Step definitions (~100 reusable steps)
-│   └── environment.py      # Test setup/teardown
-│
-├── app/                    # FastAPI application (NOT YET IMPLEMENTED)
+├── app/                    # FastAPI application
 │   ├── main.py             # FastAPI app with lifespan
 │   ├── config.py           # Settings via pydantic-settings
 │   ├── dependencies.py     # API key auth dependency
@@ -63,7 +58,6 @@ neo4j-api/
 3. **Read-Only Enforcement:** Query validator blocks write operations using keyword detection
 4. **Linkurious Compatibility:** Response formats match Linkurious Enterprise API
 5. **No Authentication on Health:** `/api/health` and `/api/databases` are public
-6. **Mock-Based Testing:** BDD tests use mocks in `features/environment.py` until app is implemented
 
 ## Development Commands
 
@@ -106,10 +100,8 @@ cp .env.example .env
    - **File checks** - Trailing whitespace, file endings, YAML/TOML/JSON syntax
    - **Conventional commits** - Enforces commit message format (feat:, fix:, test:, etc.)
 
-2. **Pre-push hook** (runs on `git push`, ~1-2 minutes):
+2. **Pre-push hook** (runs on `git push`, ~30-60 seconds):
    - **Unit tests** - All pytest tests with 100% coverage requirement
-   - **BDD smoke tests** - Critical behavior scenarios
-   - **BDD full suite** - Complete acceptance test suite
 
 **Manual hook execution:**
 ```bash
@@ -138,7 +130,7 @@ git push --no-verify
 
 **Coverage enforcement:**
 - **Threshold:** 100% for branches, functions, lines, and statements
-- **Exclusions:** tests/, features/, __init__.py files
+- **Exclusions:** tests/, __init__.py files
 - **Reports:** Terminal output + HTML (htmlcov/index.html) + XML (coverage.xml)
 - **Failure:** Push is blocked if coverage < 100%
 
@@ -151,19 +143,10 @@ git push --no-verify
 
 **Complete Test Suite:**
 ```bash
-./scripts/run_all_tests.sh  # Unit + BDD + code quality
+./scripts/run_all_tests.sh  # Unit tests + code quality
 ```
 
-**BDD Tests Only:**
-```bash
-./scripts/run_bdd_tests.sh              # All BDD tests
-./scripts/run_bdd_tests.sh --smoke      # Smoke tests only (~1 min)
-./scripts/run_bdd_tests.sh --tag=auth   # Tests by tag
-behave features/health.feature -v       # Single feature file
-behave features/ --tags=@critical       # By tag directly
-```
-
-**Unit Tests (when implemented):**
+**Unit Tests:**
 ```bash
 pytest                                  # All tests
 pytest tests/test_health.py -v          # Specific file
@@ -178,8 +161,8 @@ pytest tests/test_health.py::test_health_check_success -v
 
 ### Code Quality
 ```bash
-black app/ tests/ features/             # Format code
-ruff check app/ tests/ features/        # Lint
+black app/ tests/                       # Format code
+ruff check app/ tests/                  # Lint
 mypy app/                               # Type check
 ```
 
@@ -244,7 +227,7 @@ Issues are numbered sequentially with zero-padded two-digit numbers:
 - **Phase 4 (Search Endpoints):** `17-20` - Node and edge search
 - **Phase 5 (Node Operations):** `21-25` - Get, expand, count operations
 - **Phase 6 (Schema Endpoints):** `26-29` - Schema discovery
-- **Phase 7 (Integration):** `30-32` - Full BDD suite, coverage verification
+- **Phase 7 (Integration):** `32` - Coverage verification
 - **Phase 8 (Deployment):** `33-35` - Production deployment configs
 
 ### Branch Naming Convention
@@ -329,12 +312,6 @@ mypy app/
 # Run unit tests with coverage
 pytest --cov=app --cov-fail-under=100 --cov-report=term-missing
 
-# Run related BDD scenarios
-behave features/your_feature.feature -v
-
-# Run smoke tests
-behave features/ --tags=@smoke
-
 # Run all pre-commit checks
 pre-commit run --all-files
 ```
@@ -366,7 +343,6 @@ gh pr create \
 
 ## Testing
 - [x] Unit tests pass (pytest)
-- [x] BDD tests pass (behave)
 - [x] 100% coverage achieved
 - [x] Pre-commit hooks pass
 
@@ -409,7 +385,7 @@ nano issues/XX-new-feature.md
 
 The template includes:
 - Status tracking
-- Related specifications and BDD tests
+- Related specifications
 - Dependencies
 - TDD workflow checklist (Red → Green → Refactor)
 - Acceptance criteria
@@ -461,7 +437,6 @@ Every issue must meet these standards before PR:
 ✅ **Testing:**
 - [ ] Unit tests written (TDD approach)
 - [ ] 100% code coverage for new code
-- [ ] BDD scenarios pass (if applicable)
 - [ ] No test regression (all existing tests pass)
 
 ✅ **Documentation:**
@@ -501,18 +476,6 @@ open htmlcov/index.html       # macOS
 pytest --cov=app --cov-report=term-missing
 ```
 
-**Issue: BDD tests failing**
-```bash
-# Run with verbose output
-behave features/your_feature.feature -v
-
-# Run single scenario
-behave features/your_feature.feature:10  # Line number
-
-# Check mock client setup
-cat features/environment.py
-```
-
 **Issue: Merge conflicts**
 ```bash
 # Update branch with latest main
@@ -530,12 +493,11 @@ git commit -m "chore(issue-XX): resolve merge conflicts"
 ### Tips for Efficient Issue Work
 
 1. **Read the spec first** - Always check `specs/` before coding
-2. **Check BDD tests** - Review `features/` to understand expected behavior
-3. **Small commits** - Commit after each TDD cycle (Red, Green, Refactor)
-4. **Use fixtures** - Reuse test fixtures from `tests/conftest.py`
-5. **Mock Neo4j** - Always mock `GraphDatabase.driver` in unit tests
-6. **Verify locally** - Run all checks before pushing
-7. **Update ticket** - Check off items in ticket as you complete them
+2. **Small commits** - Commit after each TDD cycle (Red, Green, Refactor)
+3. **Use fixtures** - Reuse test fixtures from `tests/conftest.py`
+4. **Mock Neo4j** - Always mock `GraphDatabase.driver` in unit tests
+5. **Verify locally** - Run all checks before pushing
+6. **Update ticket** - Check off items in ticket as you complete them
 
 ### Progress Tracking
 
@@ -573,12 +535,7 @@ ls -1 issues/*.md | head -1
    git checkout -b feature/your-feature-name
    ```
 
-3. **Write BDD Feature (if new endpoint)**
-   - Add Gherkin scenarios to appropriate `features/*.feature`
-   - Use existing step definitions from `features/steps/`
-   - Run: `behave features/your.feature --dry-run` to validate syntax
-
-4. **Write Unit Tests First (RED)**
+3. **Write Unit Tests First (RED)**
    - Create test file: `tests/test_your_feature.py`
    - Write failing tests based on specification
    - Run: `pytest tests/test_your_feature.py` (should FAIL)
@@ -622,50 +579,6 @@ Follow [Conventional Commits](https://www.conventionalcommits.org/):
 - `docs:` Documentation changes
 - `chore:` Maintenance tasks
 
-## BDD Testing Strategy
-
-### Feature Files and Tags
-
-**6 feature files with 92 scenarios:**
-- `health.feature` - Health & database endpoints
-- `authentication.feature` - API key auth
-- `search.feature` - Node/edge search
-- `query.feature` - Cypher execution (read-only validation)
-- `nodes.feature` - Node operations
-- `schema.feature` - Schema discovery
-
-**Common tags for selective execution:**
-- `@smoke` - Critical smoke tests (run first)
-- `@critical` - High-priority tests
-- `@error` - Error handling tests
-- `@auth`, `@search`, `@query`, `@nodes`, `@schema` - By feature area
-- `@database` - Multi-database tests
-- `@performance` - Performance tests
-
-**Example: Run smoke tests**
-```bash
-behave features/ --tags=@smoke
-```
-
-### Step Definition Organization
-
-Reusable steps are organized by concern:
-
-- **`http_steps.py`** - HTTP requests, response validation, JSON checks, error validation
-- **`common_steps.py`** - Array validation, field checks, general assertions
-- **`auth_steps.py`** - Authentication setup and validation
-- **`neo4j_steps.py`** - Database state setup, search operations, query execution
-
-**When writing new scenarios:** Check existing step definitions first before creating new ones.
-
-### Mock Test Client
-
-Until the FastAPI app is fully implemented, BDD tests use mocks in `features/environment.py`:
-
-- `create_test_client()` - Returns mock HTTP client
-- `create_mock_response()` - Simulates API responses based on scenario state
-- Tests validate **behavior** against **specifications**, not actual implementation
-
 ## Important Testing Patterns
 
 ### Testing API Key Authentication
@@ -678,12 +591,6 @@ def test_valid_api_key_allows_access(client, mock_neo4j_driver, api_key):
         headers={"X-API-Key": api_key}
     )
     assert response.status_code == 200
-
-# BDD pattern (Gherkin)
-Scenario: Valid API key allows access
-  Given the Neo4j database is connected
-  When I send a GET request to "/api/neo4j/graph/nodes/count" with authentication
-  Then the response status code should be 200
 ```
 
 ### Testing Read-Only Query Validation
@@ -730,7 +637,7 @@ def test_database_routing(client, api_key):
 - **Statements:** 100% (every statement must be tested)
 
 **Exclusions:**
-- `tests/` and `features/` directories
+- `tests/` directory
 - `__init__.py` files (empty module initializers)
 - `conftest.py` (pytest configuration)
 - Abstract methods and NotImplementedError cases
@@ -761,7 +668,7 @@ pytest --cov=app --cov-fail-under=100
 
 ## Project Status
 
-**Current state:** Specifications and BDD test framework complete. FastAPI implementation pending.
+**Current state:** Specifications complete. FastAPI implementation in progress.
 
 **Implementation order (from `IMPLEMENTATION_PLAN.md`):**
 1. Health endpoints (`feature/health-endpoints`)
@@ -775,7 +682,6 @@ pytest --cov=app --cov-fail-under=100
 ## Key Files to Reference
 
 - **`specs/README.md`** - Specification-driven development process
-- **`features/README.md`** - Comprehensive BDD testing guide
 - **`IMPLEMENTATION_PLAN.md`** - Detailed TDD implementation plan with examples
-- **`BDD_SETUP_SUMMARY.md`** - BDD framework overview
+- **`issues/README.md`** - Issue-based workflow and ticket tracking
 - **`README.md`** - Project overview and quick start
