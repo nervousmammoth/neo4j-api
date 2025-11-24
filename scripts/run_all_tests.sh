@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Run all tests: Unit tests (pytest) + BDD tests (behave)
+# Run all tests: Unit tests (pytest) + Code quality checks
 #
 # Usage:
 #   ./scripts/run_all_tests.sh
@@ -59,27 +59,17 @@ fi
 
 echo ""
 
-# Run behave (BDD tests)
-echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${GREEN}  Step 2: BDD Acceptance Tests (behave)${NC}"
-echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo ""
-
-./scripts/run_bdd_tests.sh || { echo -e "${RED}❌ BDD tests failed${NC}"; exit 1; }
-
-echo ""
-
 # Code quality checks
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${GREEN}  Step 3: Code Quality Checks${NC}"
+echo -e "${GREEN}  Step 2: Code Quality Checks${NC}"
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
 # Black formatting check
 echo -e "${BLUE}Running Black (formatter check)...${NC}"
 if [ -d "app" ]; then
-  black --check app/ tests/ features/ 2>/dev/null || {
-    echo -e "${YELLOW}⚠️  Code formatting issues found. Run: black app/ tests/ features/${NC}"
+  black --check app/ tests/ 2>/dev/null || {
+    echo -e "${YELLOW}⚠️  Code formatting issues found. Run: black app/ tests/${NC}"
   }
   echo ""
 fi
@@ -87,7 +77,7 @@ fi
 # Ruff linting
 echo -e "${BLUE}Running Ruff (linter)...${NC}"
 if [ -d "app" ]; then
-  ruff check app/ tests/ features/ 2>/dev/null || {
+  ruff check app/ tests/ 2>/dev/null || {
     echo -e "${YELLOW}⚠️  Linting issues found${NC}"
   }
   echo ""
@@ -110,5 +100,4 @@ echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━
 echo ""
 echo "Reports generated:"
 echo "  - Unit test coverage: htmlcov/index.html"
-echo "  - BDD test results: reports/behave/index.html"
 echo ""

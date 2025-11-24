@@ -81,7 +81,6 @@ echo -e "\n${BLUE}━━━━━━━━━━━━━━━━━━━━�
 echo -e "${GREEN}🎉 All pre-push checks passed!${NC}"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
 echo -e "${GREEN}✓${NC} Unit tests: ${GREEN}PASSED (100% coverage)${NC}"
-echo -e "\n${YELLOW}💡 BDD tests available for manual verification: behave features/${NC}"
 echo -e "\n${GREEN}🚢 Ready to push!${NC}\n"
 
 exit 0

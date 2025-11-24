@@ -80,7 +80,7 @@ repos:
     hooks:
       - id: bandit
         name: Security check with Bandit
-        args: [-ll, -q, --exclude=tests,features]
+        args: [-ll, -q, --exclude=tests]
 
 # Configuration for pre-commit.ci (if using pre-commit.ci service)
 ci:
