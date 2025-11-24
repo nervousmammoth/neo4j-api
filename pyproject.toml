@@ -19,8 +19,6 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "behave>=1.2.6",
-    "behave-html-formatter>=0.9.10",
     "pytest>=8.3.0",
     "pytest-asyncio>=0.24.0",
     "pytest-cov>=5.0.0",
@@ -60,7 +58,6 @@ branch = true
 parallel = true
 omit = [
     "*/tests/*",
-    "*/features/*",
     "*/__pycache__/*",
     "*/venv/*",
     "*/.venv/*",
@@ -69,7 +66,7 @@ omit = [
     "*/conftest.py",
     # Skeleton files - will be implemented in future issues
     # app/dependencies.py - IMPLEMENTED in Issue 08
-    "app/main.py",
+    # app/main.py - IMPLEMENTED in Issue 09
     # app/models.py - IMPLEMENTED in Issue 07
     "app/routers/*.py",
 ]
@@ -162,7 +159,6 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = ["S", "ARG"]  # Security and unused args OK in tests
-"features/**/*.py" = ["S", "ARG", "T20"]  # BDD tests can be more permissive
 
 [tool.ruff.lint.isort]
 known-first-party = ["app"]
@@ -199,10 +195,6 @@ exclude = [
     "^build/",
     "^dist/",
 ]
-
-[[tool.mypy.overrides]]
-module = "behave.*"
-ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = "neo4j.*"

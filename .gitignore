@@ -37,6 +37,7 @@ venv.bak/
 
 # Testing
 htmlcov/
+reports/
 .tox/
 .nox/
 .coverage

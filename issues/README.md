@@ -77,15 +77,12 @@ Each ticket has a status indicator at the top:
 |---|--------|-----------|--------|--------------|
 | 10 | health-check-endpoint | 1.5h | ⏳ TODO | #09 |
 | 11 | databases-list-endpoint | 1.5h | ⏳ TODO | #09 |
-| 12 | health-bdd-validation | 1h | ⏳ TODO | #10, #11 |
 
-**Phase Total:** 4 hours
-
-**BDD Coverage:** 12 scenarios in `features/health.feature`
+**Phase Total:** 3 hours
 
 ---
 
-### Phase 3: Query Execution (13-16)
+### Phase 3: Query Execution (13-15)
 **Goal:** Implement Cypher query execution with read-only validation
 
 | # | Ticket | Est. Time | Status | Dependencies |
@@ -93,15 +90,12 @@ Each ticket has a status indicator at the top:
 | 13 | query-models | 1h | ⏳ TODO | #07 |
 | 14 | query-endpoint-basic | 2h | ⏳ TODO | #09, #13 |
 | 15 | query-validation-integration | 2h | ⏳ TODO | #06, #14 |
-| 16 | query-bdd-validation | 1h | ⏳ TODO | #15 |
 
-**Phase Total:** 6 hours
-
-**BDD Coverage:** 18 scenarios in `features/query.feature`
+**Phase Total:** 5 hours
 
 ---
 
-### Phase 4: Search Endpoints (17-20)
+### Phase 4: Search Endpoints (17-19)
 **Goal:** Implement node and edge search with fuzzy matching
 
 | # | Ticket | Est. Time | Status | Dependencies |
@@ -109,11 +103,8 @@ Each ticket has a status indicator at the top:
 | 17 | search-models | 1h | ⏳ TODO | #07 |
 | 18 | search-node-endpoint | 2h | ⏳ TODO | #09, #17 |
 | 19 | search-edge-endpoint | 2h | ⏳ TODO | #09, #17 |
-| 20 | search-bdd-validation | 1h | ⏳ TODO | #18, #19 |
 
-**Phase Total:** 6 hours
-
-**BDD Coverage:** 19 scenarios in `features/search.feature`
+**Phase Total:** 5 hours
 
 ---
 
@@ -126,15 +117,12 @@ Each ticket has a status indicator at the top:
 | 22 | get-node-endpoint | 1.5h | ⏳ TODO | #09, #21 |
 | 23 | expand-node-endpoint | 2h | ⏳ TODO | #09, #21 |
 | 24 | count-endpoints | 1.5h | ⏳ TODO | #09, #21 |
-| 25 | nodes-bdd-validation | 1h | ⏳ TODO | #22, #23, #24 |
 
-**Phase Total:** 7.5 hours
-
-**BDD Coverage:** 15 scenarios in `features/nodes.feature`
+**Phase Total:** 6.5 hours
 
 ---
 
-### Phase 6: Schema Endpoints (26-29)
+### Phase 6: Schema Endpoints (26-28)
 **Goal:** Implement schema discovery (node labels, relationship types)
 
 | # | Ticket | Est. Time | Status | Dependencies |
@@ -142,26 +130,19 @@ Each ticket has a status indicator at the top:
 | 26 | schema-models | 1h | ⏳ TODO | #07 |
 | 27 | schema-node-types-endpoint | 1.5h | ⏳ TODO | #09, #26 |
 | 28 | schema-edge-types-endpoint | 1.5h | ⏳ TODO | #09, #26 |
-| 29 | schema-bdd-validation | 1h | ⏳ TODO | #27, #28 |
-
-**Phase Total:** 5 hours
-
-**BDD Coverage:** 14 scenarios in `features/schema.feature`
-
----
-
-### Phase 7: Integration & Polish (30-32)
-**Goal:** Validate complete system with full BDD suite and coverage
-
-| # | Ticket | Est. Time | Status | Dependencies |
-|---|--------|-----------|--------|--------------|
-| 30 | auth-bdd-validation | 1h | ⏳ TODO | #08, #09 |
-| 31 | full-bdd-suite | 2h | ⏳ TODO | All features |
-| 32 | coverage-verification | 1h | ⏳ TODO | All implementation |
 
 **Phase Total:** 4 hours
 
-**BDD Coverage:** All 91 scenarios across 6 feature files
+---
+
+### Phase 7: Integration & Polish (32)
+**Goal:** Validate complete system with coverage verification
+
+| # | Ticket | Est. Time | Status | Dependencies |
+|---|--------|-----------|--------|--------------|
+| 32 | coverage-verification | 1h | ⏳ TODO | All implementation |
+
+**Phase Total:** 1 hour
 
 ---
 
@@ -252,13 +233,10 @@ pytest --cov=app --cov-report=term-missing
 # Run all unit tests with coverage
 pytest --cov=app --cov-fail-under=100 --cov-report=html
 
-# Run BDD smoke tests
-behave features/ --tags=@smoke
-
 # Run all pre-commit hooks
 pre-commit run --all-files
 
-# Full test suite (unit + BDD + quality)
+# Full test suite (unit + quality)
 ./scripts/run_all_tests.sh
 ```
 
@@ -289,7 +267,6 @@ gh pr create \
 
 ## Testing
 - [x] Unit tests pass (pytest)
-- [x] BDD tests pass (behave)
 - [x] 100% coverage achieved
 - [x] Pre-commit hooks pass
 
@@ -353,25 +330,24 @@ done
 
 **Phase 2-3 Dependencies:**
 ```
-09 ─┬─→ 10 ─┐
-    │        ├─→ 12 (Health BDD)
-    └─→ 11 ─┘
+09 ─┬─→ 10
+    └─→ 11
 
-07 → 13 → 14 → 15 → 16 (Query BDD)
+07 → 13 → 14 → 15
 06 ────────────┘
 ```
 
 **Phase 4-6 Dependencies:**
 ```
-09 + 07 → 17 → 18 ─┐
-                19 ─┼─→ 20 (Search BDD)
+09 + 07 → 17 → 18
+                19
 
-09 + 07 → 21 → 22 ─┐
-               23 ─┼─→ 25 (Nodes BDD)
-               24 ─┘
+09 + 07 → 21 → 22
+               23
+               24
 
-09 + 07 → 26 → 27 ─┐
-               28 ─┼─→ 29 (Schema BDD)
+09 + 07 → 26 → 27
+               28
 ```
 
 ## Ticket Template
@@ -394,12 +370,7 @@ Always check the specification before starting:
 - `specs/data-models.md` - Request/response models
 - `specs/error-handling.md` - Error responses
 
-### 2. Check BDD Tests
-Review feature files to understand expected behavior:
-- `features/*.feature` - Gherkin scenarios
-- `features/steps/` - Step definitions
-
-### 3. Follow TDD Strictly
+### 2. Follow TDD Strictly
 **Always write tests first:**
 1. Write failing test (RED)
 2. Implement minimum code (GREEN)

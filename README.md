@@ -14,7 +14,7 @@ This project implements a FastAPI-based REST API that serves as a bridge between
 - **Linkurious-Compatible** - Response formats match Linkurious Enterprise API
 - **Multi-Database Support** - Route to different Neo4j databases via path: `/api/{database}/...`
 - **API Key Authentication** - Secure access with X-API-Key header validation
-- **Comprehensive Testing** - Dual strategy with pytest (unit) + behave (BDD)
+- **Comprehensive Testing** - pytest for unit and integration tests with 100% coverage
 - **100% Test Coverage** - Enforced via Git hooks
 - **Specification-Driven** - All endpoints defined in `specs/` before implementation
 - **Production Ready** - Caddy reverse proxy with automatic HTTPS
@@ -130,7 +130,6 @@ curl -X POST \
 ```
 neo4j-api/
 ├── specs/                  # API specifications (source of truth)
-├── features/               # BDD acceptance tests (6 files, 137 scenarios)
 ├── app/                    # FastAPI application
 │   ├── main.py             # FastAPI app with lifespan
 │   ├── config.py           # Settings via pydantic-settings
@@ -146,11 +145,10 @@ neo4j-api/
 This project follows **Specification-Driven Development** and **Test-Driven Development (TDD)**:
 
 1. Read specification in `specs/endpoints-*.md`
-2. Write BDD scenarios in `features/*.feature`
-3. Write failing unit tests (RED)
-4. Implement minimal code (GREEN)
-5. Refactor and improve (REFACTOR)
-6. Verify 100% test coverage
+2. Write failing unit tests (RED)
+3. Implement minimal code (GREEN)
+4. Refactor and improve (REFACTOR)
+5. Verify 100% test coverage
 
 For detailed workflow, see [CLAUDE.md](CLAUDE.md).
 
@@ -173,42 +171,29 @@ Setup hooks with: `./scripts/setup_hooks.sh`
 ### Running Tests
 
 ```bash
-# Run all tests (unit + BDD + quality checks)
+# Run all tests (unit + quality checks)
 ./scripts/run_all_tests.sh
 
 # Unit tests only
 pytest
 pytest --cov=app --cov-report=html  # With coverage report
 
-# BDD tests only
-./scripts/run_bdd_tests.sh              # All scenarios
-./scripts/run_bdd_tests.sh --smoke      # Smoke tests only
-behave features/ --tags=@critical       # By tag
-
-# Single feature file
-behave features/health.feature -v
-
 # Code quality checks
-black app/ tests/ features/             # Format code
-ruff check app/ tests/ features/        # Lint
+black app/ tests/                       # Format code
+ruff check app/ tests/                  # Lint
 mypy app/                               # Type check
 bandit -r app/                          # Security scan
 ```
 
 ### Testing Strategy
 
-**Dual Testing Approach:**
+**Unit and Integration Testing with pytest:**
 
-1. **Unit Tests (pytest)** - Test individual components in isolation
-   - Coverage requirement: 100% (branches, functions, lines, statements)
-   - Fixtures in `tests/conftest.py`
-   - Mock Neo4j driver for all tests
-
-2. **BDD Tests (behave)** - Test complete user scenarios
-   - 6 feature files: health, authentication, search, query, nodes, schema
-   - 137 scenarios total (91 scenarios + 12 scenario outlines with 46 example rows)
-   - Reusable step definitions in `features/steps/`
-   - Tags: @smoke, @critical, @error, @auth, @search, @query, etc.
+- Test individual components and complete workflows
+- Coverage requirement: 100% (branches, functions, lines, statements)
+- Fixtures in `tests/conftest.py`
+- Mock Neo4j driver for all tests
+- Markers: @unit, @integration, @smoke
 
 ### Code Quality Standards
 
@@ -275,17 +260,15 @@ Reload Caddy: `sudo systemctl reload caddy`
 ## Documentation
 
 - **[API Specifications](specs/)** - Complete endpoint specifications
-- **[BDD Test Scenarios](features/)** - Behavior-driven test scenarios
 - **[Development Guide](CLAUDE.md)** - Comprehensive development workflow
 - **[Implementation Plan](IMPLEMENTATION_PLAN.md)** - TDD implementation roadmap
-- **[BDD Setup Summary](BDD_SETUP_SUMMARY.md)** - Testing framework overview
+- **[Issue Tracking](issues/)** - Ticket-driven development workflow
 
-## Testing Statistics
+## Testing Standards
 
-- **BDD Scenarios**: 137 scenarios across 6 feature files (91 scenarios + 12 scenario outlines with 46 example rows)
-- **Step Definitions**: ~100 reusable steps
-- **Coverage Requirement**: 100% for all metrics
-- **Test Execution Time**: ~2-3 minutes for full suite
+- **Coverage Requirement**: 100% for all metrics (branches, functions, lines, statements)
+- **Test Framework**: pytest with comprehensive fixtures
+- **Quality Gates**: Pre-commit and pre-push hooks enforce standards
 
 ## Contributing
 
@@ -302,6 +285,5 @@ See [CLAUDE.md](CLAUDE.md) for detailed contribution guidelines.
 
 - Built with [FastAPI](https://fastapi.tiangolo.com/)
 - [Neo4j Python Driver](https://neo4j.com/developer/python/)
-- [Behave BDD Framework](https://behave.readthedocs.io/)
 - [pytest](https://pytest.org/)
 - [Caddy Web Server](https://caddyserver.com/)
