@@ -2,6 +2,7 @@
 
 Endpoints:
 - GET /api/health - Health check and Neo4j connectivity
+- GET /api/databases - List available Neo4j databases
 
 This module provides public endpoints that do NOT require authentication.
 """
@@ -14,7 +15,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
 from app.config import get_settings
-from app.models import HealthResponse
+from app.models import Database, DatabaseListResponse, HealthResponse
 
 logger = logging.getLogger(__name__)
 
@@ -87,3 +88,80 @@ async def health_check(request: Request) -> HealthResponse | JSONResponse:
     else:
         logger.warning("Health check failed: Neo4j connectivity returned False")
         return _unhealthy_response("Neo4j connectivity check failed")
+
+
+@router.get(
+    "/databases",
+    response_model=DatabaseListResponse,
+    responses={
+        200: {
+            "description": "List of available databases",
+            "model": DatabaseListResponse,
+        },
+        500: {
+            "description": "Failed to query databases",
+        },
+        503: {
+            "description": "Neo4j client not available",
+        },
+    },
+)
+async def list_databases(request: Request) -> DatabaseListResponse | JSONResponse:
+    """List all available Neo4j databases.
+
+    Returns a list of all databases accessible in the Neo4j instance.
+    This endpoint does NOT require authentication (public endpoint).
+
+    Args:
+        request: FastAPI request object for accessing app state.
+
+    Returns:
+        DatabaseListResponse with list of databases.
+        Returns 200 on success, 500 on query failure, 503 if Neo4j unavailable.
+    """
+    # Check if Neo4j client is initialized
+    neo4j_client = getattr(request.app.state, "neo4j_client", None)
+
+    if neo4j_client is None:
+        logger.warning("Database list failed: Neo4j client not initialized")
+        return JSONResponse(
+            status_code=503,
+            content={
+                "error": {
+                    "code": "NEO4J_UNAVAILABLE",
+                    "message": "Neo4j client not initialized",
+                }
+            },
+        )
+
+    try:
+        # Query system database for database list
+        results = neo4j_client.execute_query(
+            "SHOW DATABASES",
+            database="system",
+        )
+
+        # Parse results into Database objects
+        databases = [
+            Database(
+                name=record["name"],
+                default=record.get("default", False),
+                status=record.get("currentStatus"),
+            )
+            for record in results
+        ]
+
+        logger.debug("Database list retrieved: %d databases", len(databases))
+        return DatabaseListResponse(databases=databases)
+
+    except Exception as e:
+        logger.error("Database list failed: %s", e)
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": {
+                    "code": "DATABASE_QUERY_ERROR",
+                    "message": f"Failed to list databases: {e!s}",
+                }
+            },
+        )
