@@ -51,35 +51,31 @@ async def health_check(request: Request) -> HealthResponse | JSONResponse:
     settings = get_settings()
     version = settings.api_version
 
-    # Check if Neo4j client is initialized
-    neo4j_client = getattr(request.app.state, "neo4j_client", None)
-
-    if neo4j_client is None:
-        logger.warning("Health check failed: Neo4j client not initialized")
+    def _unhealthy_response(error_msg: str) -> JSONResponse:
+        """Create a standardized unhealthy JSONResponse."""
         return JSONResponse(
             status_code=503,
             content={
                 "status": "unhealthy",
                 "neo4j": "disconnected",
                 "version": version,
-                "error": "Neo4j client not initialized",
+                "error": error_msg,
             },
         )
+
+    # Check if Neo4j client is initialized
+    neo4j_client = getattr(request.app.state, "neo4j_client", None)
+
+    if neo4j_client is None:
+        logger.warning("Health check failed: Neo4j client not initialized")
+        return _unhealthy_response("Neo4j client not initialized")
 
     # Verify Neo4j connectivity
     try:
         connected = neo4j_client.verify_connectivity()
     except Exception as e:
         logger.error("Health check failed: Neo4j connectivity error: %s", e)
-        return JSONResponse(
-            status_code=503,
-            content={
-                "status": "unhealthy",
-                "neo4j": "disconnected",
-                "version": version,
-                "error": str(e),
-            },
-        )
+        return _unhealthy_response(str(e))
 
     if connected:
         logger.debug("Health check passed: Neo4j connected")
@@ -90,12 +86,4 @@ async def health_check(request: Request) -> HealthResponse | JSONResponse:
         )
     else:
         logger.warning("Health check failed: Neo4j connectivity returned False")
-        return JSONResponse(
-            status_code=503,
-            content={
-                "status": "unhealthy",
-                "neo4j": "disconnected",
-                "version": version,
-                "error": "Neo4j connectivity check failed",
-            },
-        )
+        return _unhealthy_response("Neo4j connectivity check failed")

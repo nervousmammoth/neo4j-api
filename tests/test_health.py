@@ -19,13 +19,11 @@ class TestHealthCheckSuccess:
     def test_health_check_returns_200_when_neo4j_connected(
         self,
         settings_fixture: Settings,
-        mock_neo4j_driver: MagicMock,
     ) -> None:
         """Test health check returns 200 when Neo4j is connected.
 
         Args:
             settings_fixture: Test settings with configured values.
-            mock_neo4j_driver: Mock Neo4j driver that returns successful connectivity.
         """
         # Arrange - create FastAPI app with health router
         from app.routers.health import router
