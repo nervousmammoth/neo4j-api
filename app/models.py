@@ -106,4 +106,63 @@ class SuccessResponse(BaseModel):
     }
 
 
+class HealthResponse(BaseModel):
+    """Health check response.
+
+    Response model for the GET /api/health endpoint.
+    Returns API health status and Neo4j connectivity information.
+
+    Attributes:
+        status: Overall health status ("healthy" or "unhealthy").
+        neo4j: Neo4j connection status ("connected" or "disconnected").
+        version: API version string.
+        error: Optional error message when unhealthy.
+
+    Examples:
+        >>> # Healthy response
+        >>> response = HealthResponse(
+        ...     status="healthy",
+        ...     neo4j="connected",
+        ...     version="1.0.0"
+        ... )
+        >>> response.model_dump()
+        {'status': 'healthy', 'neo4j': 'connected', 'version': '1.0.0', 'error': None}
+
+        >>> # Unhealthy response
+        >>> response = HealthResponse(
+        ...     status="unhealthy",
+        ...     neo4j="disconnected",
+        ...     version="1.0.0",
+        ...     error="Connection refused"
+        ... )
+    """
+
+    status: Literal["healthy", "unhealthy"] = Field(
+        ..., description="Overall health status"
+    )
+    neo4j: Literal["connected", "disconnected"] = Field(
+        ..., description="Neo4j connection status"
+    )
+    version: str | None = Field(default=None, description="API version")
+    error: str | None = Field(default=None, description="Error message when unhealthy")
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "status": "healthy",
+                    "neo4j": "connected",
+                    "version": "1.0.0",
+                },
+                {
+                    "status": "unhealthy",
+                    "neo4j": "disconnected",
+                    "version": "1.0.0",
+                    "error": "Connection refused to bolt://localhost:7687",
+                },
+            ]
+        }
+    }
+
+
 # Additional domain-specific models will be added in later issues (13, 17, 21, 26)
