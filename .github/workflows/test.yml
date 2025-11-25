@@ -101,22 +101,12 @@ jobs:
           pip install -r requirements-dev.txt
 
       - name: Run Black (formatter check)
-        run: |
-          if [ "${{ steps.check_app.outputs.exists }}" == "true" ]; then
-            black --check app/ tests/ features/
-          else
-            echo "⏭️  Checking features/ only (app/ not yet implemented)"
-            black --check features/
-          fi
+        if: steps.check_app.outputs.exists == 'true'
+        run: black --check app/ tests/
 
       - name: Run Ruff (linter)
-        run: |
-          if [ "${{ steps.check_app.outputs.exists }}" == "true" ]; then
-            ruff check app/ tests/ features/
-          else
-            echo "⏭️  Checking features/ only (app/ not yet implemented)"
-            ruff check features/
-          fi
+        if: steps.check_app.outputs.exists == 'true'
+        run: ruff check app/ tests/
 
       - name: Run mypy (type checking)
         if: steps.check_app.outputs.exists == 'true'
