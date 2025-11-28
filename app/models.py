@@ -165,4 +165,61 @@ class HealthResponse(BaseModel):
     }
 
 
+class Database(BaseModel):
+    """Individual database information.
+
+    Represents a single Neo4j database returned by SHOW DATABASES.
+
+    Attributes:
+        name: Database name (e.g., "neo4j", "system").
+        default: Whether this is the default database.
+        status: Database status (e.g., "online", "offline"). Optional.
+
+    Examples:
+        >>> db = Database(name="neo4j", default=True, status="online")
+        >>> db.model_dump()
+        {'name': 'neo4j', 'default': True, 'status': 'online'}
+    """
+
+    name: str = Field(..., description="Database name")
+    default: bool = Field(..., description="Whether this is the default database")
+    status: str | None = Field(default=None, description="Database status")
+
+
+class DatabaseListResponse(BaseModel):
+    """Database list response.
+
+    Response model for the GET /api/databases endpoint.
+    Returns a list of all available Neo4j databases.
+
+    Attributes:
+        databases: List of Database objects.
+
+    Examples:
+        >>> response = DatabaseListResponse(databases=[
+        ...     Database(name="neo4j", default=True, status="online"),
+        ...     Database(name="system", default=False, status="online"),
+        ... ])
+        >>> len(response.databases)
+        2
+    """
+
+    databases: list[Database] = Field(..., description="List of databases")
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "databases": [
+                    {"name": "neo4j", "default": True, "status": "online"},
+                    {
+                        "name": "investigation_001",
+                        "default": False,
+                        "status": "online",
+                    },
+                ]
+            }
+        }
+    }
+
+
 # Additional domain-specific models will be added in later issues (13, 17, 21, 26)

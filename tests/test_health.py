@@ -284,3 +284,393 @@ class TestHealthCheckEdgeCases:
         assert data["neo4j"] == "disconnected"
         assert "error" in data
         assert "Connection refused" in data["error"]
+
+
+class TestDatabasesListSuccess:
+    """Test successful databases list scenarios."""
+
+    def test_databases_returns_200_on_success(
+        self,
+        settings_fixture: Settings,
+    ) -> None:
+        """Test databases list returns 200 when query succeeds.
+
+        Args:
+            settings_fixture: Test settings with configured values.
+        """
+        # Arrange
+        from app.routers.health import router
+
+        app = FastAPI()
+        app.include_router(router)
+
+        mock_client = MagicMock()
+        mock_client.execute_query.return_value = [
+            {"name": "neo4j", "default": True, "currentStatus": "online"},
+            {"name": "system", "default": False, "currentStatus": "online"},
+        ]
+        app.state.neo4j_client = mock_client
+
+        from app.config import get_settings
+
+        app.dependency_overrides[get_settings] = lambda: settings_fixture
+
+        client = TestClient(app)
+
+        # Act
+        response = client.get("/api/databases")
+
+        # Assert
+        assert response.status_code == 200
+
+    def test_databases_response_format_matches_spec(
+        self,
+        settings_fixture: Settings,
+    ) -> None:
+        """Test that databases response format matches specification.
+
+        Response must include: databases array with name, default, status fields.
+
+        Args:
+            settings_fixture: Test settings with configured values.
+        """
+        # Arrange
+        from app.routers.health import router
+
+        app = FastAPI()
+        app.include_router(router)
+
+        mock_client = MagicMock()
+        mock_client.execute_query.return_value = [
+            {"name": "neo4j", "default": True, "currentStatus": "online"},
+            {"name": "investigation_001", "default": False, "currentStatus": "online"},
+        ]
+        app.state.neo4j_client = mock_client
+
+        from app.config import get_settings
+
+        app.dependency_overrides[get_settings] = lambda: settings_fixture
+
+        client = TestClient(app)
+
+        # Act
+        response = client.get("/api/databases")
+
+        # Assert
+        assert response.status_code == 200
+        data = response.json()
+
+        # Verify databases array exists
+        assert "databases" in data
+        assert isinstance(data["databases"], list)
+
+        # Verify each database has required fields
+        for db in data["databases"]:
+            assert "name" in db
+            assert "default" in db
+            assert isinstance(db["name"], str)
+            assert isinstance(db["default"], bool)
+
+    def test_databases_no_auth_required(
+        self,
+        settings_fixture: Settings,
+    ) -> None:
+        """Test that databases endpoint does NOT require authentication.
+
+        The /api/databases endpoint must be public - no X-API-Key header needed.
+
+        Args:
+            settings_fixture: Test settings with configured values.
+        """
+        # Arrange
+        from app.routers.health import router
+
+        app = FastAPI()
+        app.include_router(router)
+
+        mock_client = MagicMock()
+        mock_client.execute_query.return_value = [
+            {"name": "neo4j", "default": True, "currentStatus": "online"},
+        ]
+        app.state.neo4j_client = mock_client
+
+        from app.config import get_settings
+
+        app.dependency_overrides[get_settings] = lambda: settings_fixture
+
+        client = TestClient(app)
+
+        # Act - Make request WITHOUT X-API-Key header
+        response = client.get("/api/databases")
+
+        # Assert - Should succeed without authentication
+        assert response.status_code == 200
+        assert response.status_code != 401
+        assert response.status_code != 403
+
+    def test_databases_returns_list_of_databases(
+        self,
+        settings_fixture: Settings,
+    ) -> None:
+        """Test that databases endpoint returns correct list of databases.
+
+        Args:
+            settings_fixture: Test settings with configured values.
+        """
+        # Arrange
+        from app.routers.health import router
+
+        app = FastAPI()
+        app.include_router(router)
+
+        mock_client = MagicMock()
+        mock_client.execute_query.return_value = [
+            {"name": "neo4j", "default": True, "currentStatus": "online"},
+            {"name": "system", "default": False, "currentStatus": "online"},
+            {"name": "investigation_001", "default": False, "currentStatus": "online"},
+        ]
+        app.state.neo4j_client = mock_client
+
+        from app.config import get_settings
+
+        app.dependency_overrides[get_settings] = lambda: settings_fixture
+
+        client = TestClient(app)
+
+        # Act
+        response = client.get("/api/databases")
+
+        # Assert
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["databases"]) == 3
+
+        # Check database names
+        db_names = [db["name"] for db in data["databases"]]
+        assert "neo4j" in db_names
+        assert "system" in db_names
+        assert "investigation_001" in db_names
+
+    def test_databases_default_database_marked_correctly(
+        self,
+        settings_fixture: Settings,
+    ) -> None:
+        """Test that the default database is marked correctly.
+
+        Args:
+            settings_fixture: Test settings with configured values.
+        """
+        # Arrange
+        from app.routers.health import router
+
+        app = FastAPI()
+        app.include_router(router)
+
+        mock_client = MagicMock()
+        mock_client.execute_query.return_value = [
+            {"name": "neo4j", "default": True, "currentStatus": "online"},
+            {"name": "system", "default": False, "currentStatus": "online"},
+        ]
+        app.state.neo4j_client = mock_client
+
+        from app.config import get_settings
+
+        app.dependency_overrides[get_settings] = lambda: settings_fixture
+
+        client = TestClient(app)
+
+        # Act
+        response = client.get("/api/databases")
+
+        # Assert
+        assert response.status_code == 200
+        data = response.json()
+
+        # Find neo4j database and verify it's marked as default
+        neo4j_db = next(db for db in data["databases"] if db["name"] == "neo4j")
+        assert neo4j_db["default"] is True
+
+        # Find system database and verify it's not default
+        system_db = next(db for db in data["databases"] if db["name"] == "system")
+        assert system_db["default"] is False
+
+    def test_databases_includes_status_field(
+        self,
+        settings_fixture: Settings,
+    ) -> None:
+        """Test that databases response includes status field.
+
+        Args:
+            settings_fixture: Test settings with configured values.
+        """
+        # Arrange
+        from app.routers.health import router
+
+        app = FastAPI()
+        app.include_router(router)
+
+        mock_client = MagicMock()
+        mock_client.execute_query.return_value = [
+            {"name": "neo4j", "default": True, "currentStatus": "online"},
+        ]
+        app.state.neo4j_client = mock_client
+
+        from app.config import get_settings
+
+        app.dependency_overrides[get_settings] = lambda: settings_fixture
+
+        client = TestClient(app)
+
+        # Act
+        response = client.get("/api/databases")
+
+        # Assert
+        assert response.status_code == 200
+        data = response.json()
+        assert data["databases"][0]["status"] == "online"
+
+
+class TestDatabasesListFailure:
+    """Test databases list failure scenarios."""
+
+    def test_databases_returns_500_on_query_failure(
+        self,
+        settings_fixture: Settings,
+    ) -> None:
+        """Test databases returns 500 when query execution fails.
+
+        Args:
+            settings_fixture: Test settings with configured values.
+        """
+        # Arrange
+        from app.routers.health import router
+
+        app = FastAPI()
+        app.include_router(router)
+
+        mock_client = MagicMock()
+        mock_client.execute_query.side_effect = Exception("Permission denied")
+        app.state.neo4j_client = mock_client
+
+        from app.config import get_settings
+
+        app.dependency_overrides[get_settings] = lambda: settings_fixture
+
+        client = TestClient(app)
+
+        # Act
+        response = client.get("/api/databases")
+
+        # Assert
+        assert response.status_code == 500
+        data = response.json()
+        assert "error" in data
+
+    def test_databases_returns_503_when_neo4j_unavailable(
+        self,
+        settings_fixture: Settings,
+    ) -> None:
+        """Test databases returns 503 when Neo4j client is not available.
+
+        Args:
+            settings_fixture: Test settings with configured values.
+        """
+        # Arrange
+        from app.routers.health import router
+
+        app = FastAPI()
+        app.include_router(router)
+
+        # Set client to None (simulating failed initialization)
+        app.state.neo4j_client = None
+
+        from app.config import get_settings
+
+        app.dependency_overrides[get_settings] = lambda: settings_fixture
+
+        client = TestClient(app)
+
+        # Act
+        response = client.get("/api/databases")
+
+        # Assert
+        assert response.status_code == 503
+        data = response.json()
+        assert "error" in data
+
+
+class TestDatabasesListEdgeCases:
+    """Test databases list edge cases."""
+
+    def test_databases_handles_empty_database_list(
+        self,
+        settings_fixture: Settings,
+    ) -> None:
+        """Test databases handles empty database list.
+
+        Args:
+            settings_fixture: Test settings with configured values.
+        """
+        # Arrange
+        from app.routers.health import router
+
+        app = FastAPI()
+        app.include_router(router)
+
+        mock_client = MagicMock()
+        mock_client.execute_query.return_value = []
+        app.state.neo4j_client = mock_client
+
+        from app.config import get_settings
+
+        app.dependency_overrides[get_settings] = lambda: settings_fixture
+
+        client = TestClient(app)
+
+        # Act
+        response = client.get("/api/databases")
+
+        # Assert
+        assert response.status_code == 200
+        data = response.json()
+        assert "databases" in data
+        assert data["databases"] == []
+
+    def test_databases_handles_missing_optional_fields(
+        self,
+        settings_fixture: Settings,
+    ) -> None:
+        """Test databases handles missing optional fields in Neo4j response.
+
+        Args:
+            settings_fixture: Test settings with configured values.
+        """
+        # Arrange
+        from app.routers.health import router
+
+        app = FastAPI()
+        app.include_router(router)
+
+        mock_client = MagicMock()
+        # Neo4j response might not have all fields
+        mock_client.execute_query.return_value = [
+            {"name": "neo4j", "default": True},  # Missing currentStatus
+        ]
+        app.state.neo4j_client = mock_client
+
+        from app.config import get_settings
+
+        app.dependency_overrides[get_settings] = lambda: settings_fixture
+
+        client = TestClient(app)
+
+        # Act
+        response = client.get("/api/databases")
+
+        # Assert
+        assert response.status_code == 200
+        data = response.json()
+        assert data["databases"][0]["name"] == "neo4j"
+        assert data["databases"][0]["default"] is True
+        # Status should be None or missing when not provided
+        assert data["databases"][0].get("status") is None
