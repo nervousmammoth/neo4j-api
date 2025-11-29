@@ -1,161 +1,115 @@
-# Issues - Ticket-Based Development Workflow
+# Issues - Priority-Based Development Workflow
 
-This directory contains all development tasks organized as small, manageable tickets following Test-Driven Development (TDD) principles.
+This directory contains all development tasks organized as prioritized tickets following Test-Driven Development (TDD) principles.
 
 ## Overview
 
-**Total Tickets:** 36 (00-35)
-**Phases:** 8 phases from Foundation to Deployment
-**Average Time:** 1.7-2.4 hours per ticket
-**Total Estimated Time:** 60-85 hours
+**Naming Schema:** `P{priority}.{number}-Title-With-Dashes.md`
+**Priority Levels:** P0 (Foundation/Done) → P1 (High) → P2 (Medium) → P3 (Lower) → P4 (Infrastructure)
 
 ## Directory Structure
 
 ```
 issues/
-├── README.md                    # This file - workflow overview
+├── README.md                         # This file - workflow overview
 ├── templates/
-│   └── ticket-template.md       # Template for creating new tickets
-├── 00-create-readme.md          # Active tickets (TODO or IN PROGRESS)
-├── 01-create-env-example.md
+│   └── ticket-template.md            # Template for creating new tickets
+├── P1.1-Query-Models.md              # Active tickets by priority
+├── P2.1-Search-Models.md
 ├── ... (other active tickets)
 └── completed/
-    └── XX-ticket-name.md        # Completed and merged tickets
+    └── P0.X-Ticket-Name.md           # Completed and merged tickets
 ```
 
-## Ticket Lifecycle
+## Ticket Format
 
+Each ticket uses YAML-style frontmatter:
+
+```markdown
+---
+**Status:** To Do | In Progress | Done
+**Priority:** P0 | P1 | P2 | P3 | P4
+**Branch:** `feature/P{X}.{Y}-Title-Name`
+---
+
+## Overview
+
+Description of the ticket...
 ```
-📝 Created → 🚧 In Progress → 🔍 PR Review → ✅ Merged → 📦 Moved to completed/
-```
 
-### Ticket States
+## All Tickets by Priority
 
-Each ticket has a status indicator at the top:
-- ⏳ **TODO** - Not started yet
-- 🚧 **IN PROGRESS** - Currently being worked on
-- ✅ **COMPLETED** - Finished and merged to main
+### P0 - Foundation (Completed)
+**Goal:** Setup project structure and core infrastructure
 
-## All Tickets by Phase
-
-### Phase 0: Foundation (00-03)
-**Goal:** Setup project structure and documentation
-
-| # | Ticket | Est. Time | Status | Dependencies |
-|---|--------|-----------|--------|--------------|
-| 00 | create-readme | 1h | ⏳ TODO | None |
-| 01 | create-env-example | 0.5h | ⏳ TODO | None |
-| 02 | setup-app-structure | 0.5h | ⏳ TODO | None |
-| 03 | setup-tests-structure | 0.5h | ⏳ TODO | #02 |
-
-**Phase Total:** 2.5 hours
+| Code | Title | Status |
+|------|-------|--------|
+| P0.0 | Create-Readme | ✅ Done |
+| P0.1 | Create-Env-Example | ✅ Done |
+| P0.2 | Setup-App-Structure | ✅ Done |
+| P0.3 | Setup-Tests-Structure | ✅ Done |
+| P0.4 | Config-Module | ✅ Done |
+| P0.5 | Neo4j-Client | ✅ Done |
+| P0.6 | Query-Validator | ✅ Done |
+| P0.7 | Pydantic-Models-Base | ✅ Done |
+| P0.8 | API-Key-Dependency | ✅ Done |
+| P0.9 | FastAPI-App-Skeleton | ✅ Done |
+| P0.10 | Health-Check-Endpoint | ✅ Done |
+| P0.11 | Databases-List-Endpoint | ✅ Done |
 
 ---
 
-### Phase 1: Core Infrastructure (04-09)
-**Goal:** Implement foundational modules (config, Neo4j client, validators, auth)
+### P1 - Query Execution & Fixes (High Priority)
+**Goal:** Implement query execution and fix critical issues
 
-| # | Ticket | Est. Time | Status | Dependencies |
-|---|--------|-----------|--------|--------------|
-| 04 | config-module | 1h | ⏳ TODO | #03 |
-| 05 | neo4j-client | 2h | ⏳ TODO | #04 |
-| 06 | query-validator | 2h | ⏳ TODO | #03 |
-| 07 | pydantic-models-base | 1h | ⏳ TODO | #03 |
-| 08 | api-key-dependency | 1.5h | ⏳ TODO | #04 |
-| 09 | fastapi-app-skeleton | 2h | ⏳ TODO | #04, #05, #08 |
-
-**Phase Total:** 9.5 hours
-
-**Critical:** Issue #06 (query-validator) is security-critical - blocks write operations
+| Code | Title | Status | Dependencies |
+|------|-------|--------|--------------|
+| P1.1 | Query-Models | ⏳ To Do | P0.7 |
+| P1.2 | Query-Endpoint-Basic | ⏳ To Do | P0.5, P0.8, P1.1 |
+| P1.3 | Query-Validation-Integration | ⏳ To Do | P0.6, P1.2 |
+| P1.4 | Fix-Coverage-Config | ⏳ To Do | None |
+| P1.5 | Standardize-Error-Format | ⏳ To Do | None |
+| P1.6 | Fix-Health-Response-Types | ⏳ To Do | None |
 
 ---
 
-### Phase 2: Health Endpoints (10-12)
-**Goal:** Implement health check and database listing endpoints
+### P2 - Search & Node Endpoints (Medium Priority)
+**Goal:** Implement search and node operations
 
-| # | Ticket | Est. Time | Status | Dependencies |
-|---|--------|-----------|--------|--------------|
-| 10 | health-check-endpoint | 1.5h | ⏳ TODO | #09 |
-| 11 | databases-list-endpoint | 1.5h | ⏳ TODO | #09 |
-
-**Phase Total:** 3 hours
-
----
-
-### Phase 3: Query Execution (13-15)
-**Goal:** Implement Cypher query execution with read-only validation
-
-| # | Ticket | Est. Time | Status | Dependencies |
-|---|--------|-----------|--------|--------------|
-| 13 | query-models | 1h | ⏳ TODO | #07 |
-| 14 | query-endpoint-basic | 2h | ⏳ TODO | #09, #13 |
-| 15 | query-validation-integration | 2h | ⏳ TODO | #06, #14 |
-
-**Phase Total:** 5 hours
+| Code | Title | Status | Dependencies |
+|------|-------|--------|--------------|
+| P2.1 | Search-Models | ⏳ To Do | P0.7 |
+| P2.2 | Search-Node-Endpoint | ⏳ To Do | P0.9, P2.1 |
+| P2.3 | Search-Edge-Endpoint | ⏳ To Do | P0.9, P2.1 |
+| P2.4 | Node-Models | ⏳ To Do | P0.7 |
+| P2.5 | Get-Node-Endpoint | ⏳ To Do | P0.9, P2.4 |
+| P2.6 | Expand-Node-Endpoint | ⏳ To Do | P0.9, P2.4 |
+| P2.7 | Count-Endpoints | ⏳ To Do | P0.9, P2.4 |
 
 ---
 
-### Phase 4: Search Endpoints (17-19)
-**Goal:** Implement node and edge search with fuzzy matching
+### P3 - Schema Endpoints (Lower Priority)
+**Goal:** Implement schema discovery
 
-| # | Ticket | Est. Time | Status | Dependencies |
-|---|--------|-----------|--------|--------------|
-| 17 | search-models | 1h | ⏳ TODO | #07 |
-| 18 | search-node-endpoint | 2h | ⏳ TODO | #09, #17 |
-| 19 | search-edge-endpoint | 2h | ⏳ TODO | #09, #17 |
-
-**Phase Total:** 5 hours
+| Code | Title | Status | Dependencies |
+|------|-------|--------|--------------|
+| P3.1 | Schema-Models | ⏳ To Do | P0.7 |
+| P3.2 | Schema-Node-Types-Endpoint | ⏳ To Do | P0.9, P3.1 |
+| P3.3 | Schema-Edge-Types-Endpoint | ⏳ To Do | P0.9, P3.1 |
 
 ---
 
-### Phase 5: Node Operations (21-25)
-**Goal:** Implement node retrieval, expansion, and counting operations
+### P4 - Infrastructure & Deployment
+**Goal:** Production deployment and documentation
 
-| # | Ticket | Est. Time | Status | Dependencies |
-|---|--------|-----------|--------|--------------|
-| 21 | node-models | 1.5h | ⏳ TODO | #07 |
-| 22 | get-node-endpoint | 1.5h | ⏳ TODO | #09, #21 |
-| 23 | expand-node-endpoint | 2h | ⏳ TODO | #09, #21 |
-| 24 | count-endpoints | 1.5h | ⏳ TODO | #09, #21 |
-
-**Phase Total:** 6.5 hours
-
----
-
-### Phase 6: Schema Endpoints (26-28)
-**Goal:** Implement schema discovery (node labels, relationship types)
-
-| # | Ticket | Est. Time | Status | Dependencies |
-|---|--------|-----------|--------|--------------|
-| 26 | schema-models | 1h | ⏳ TODO | #07 |
-| 27 | schema-node-types-endpoint | 1.5h | ⏳ TODO | #09, #26 |
-| 28 | schema-edge-types-endpoint | 1.5h | ⏳ TODO | #09, #26 |
-
-**Phase Total:** 4 hours
-
----
-
-### Phase 7: Integration & Polish (32)
-**Goal:** Validate complete system with coverage verification
-
-| # | Ticket | Est. Time | Status | Dependencies |
-|---|--------|-----------|--------|--------------|
-| 32 | coverage-verification | 1h | ⏳ TODO | All implementation |
-
-**Phase Total:** 1 hour
-
----
-
-### Phase 8: Deployment (33-35)
-**Goal:** Production deployment configuration and documentation
-
-| # | Ticket | Est. Time | Status | Dependencies |
-|---|--------|-----------|--------|--------------|
-| 33 | caddyfile-config | 1h | ⏳ TODO | #32 |
-| 34 | systemd-service | 1h | ⏳ TODO | #32 |
-| 35 | deployment-docs | 2h | ⏳ TODO | #33, #34 |
-
-**Phase Total:** 4 hours
+| Code | Title | Status | Dependencies |
+|------|-------|--------|--------------|
+| P4.1 | Coverage-Verification | ⏳ To Do | All P1-P3 |
+| P4.2 | Caddyfile-Config | ⏳ To Do | P4.1 |
+| P4.3 | Systemd-Service | ⏳ To Do | P4.1 |
+| P4.4 | Deployment-Docs | ⏳ To Do | P4.2, P4.3 |
+| P4.5 | Integration-Tests-Docker | ⏳ To Do | P4.1 |
+| P4.6 | Housekeeping-Docs | ⏳ To Do | None |
 
 ---
 
@@ -164,14 +118,14 @@ Each ticket has a status indicator at the top:
 ### 1. View Available Tickets
 
 ```bash
-# List all active tickets
-ls -1 issues/*.md
+# List all active tickets by priority
+ls -1 issues/P*.md
 
-# View next ticket to work on (lowest number)
-ls -1 issues/*.md | head -1
+# View next high-priority ticket
+ls -1 issues/P1*.md | head -1
 
 # View ticket details
-cat issues/00-create-readme.md
+cat issues/P1.1-Query-Models.md
 
 # Check completed tickets
 ls -1 issues/completed/
@@ -181,7 +135,7 @@ ls -1 issues/completed/
 
 ```bash
 # Read the ticket
-cat issues/XX-ticket-name.md
+cat issues/P1.1-Query-Models.md
 
 # Check dependencies (in ticket file)
 # Make sure dependency tickets are completed
@@ -189,331 +143,97 @@ cat issues/XX-ticket-name.md
 # Create branch
 git checkout main
 git pull origin main
-git checkout -b issue/XX-ticket-name
+git checkout -b feature/P1.1-Query-Models
 ```
 
 ### 3. Follow TDD Workflow
 
-**For Implementation Tickets (follow Red → Green → Refactor):**
+**RED → GREEN → REFACTOR:**
 
 ```bash
 # RED - Write failing tests
-# 1. Create test file: tests/test_module.py
-# 2. Write tests that should pass once feature is implemented
-# 3. Run: pytest tests/test_module.py -v
-# 4. Verify: Tests FAIL ❌
+pytest tests/test_module.py -v  # Should FAIL
 
 # GREEN - Implement minimum code
-# 1. Create/edit implementation file: app/module.py
-# 2. Write code to make tests pass
-# 3. Run: pytest tests/test_module.py -v
-# 4. Verify: Tests PASS ✅
+pytest tests/test_module.py -v  # Should PASS
 
 # REFACTOR - Improve code quality
-# 1. Run: black app/ tests/
-# 2. Run: ruff check app/ tests/ --fix
-# 3. Run: mypy app/
-# 4. Run tests again - verify still PASS ✅
+black app/ tests/
+ruff check app/ tests/ --fix
+mypy app/
+pytest tests/test_module.py -v  # Should still PASS
 ```
 
-**For Validation Tickets:**
+### 4. Commit and Push
 
 ```bash
-# Run BDD scenarios
-behave features/your_feature.feature -v
-
-# Verify all scenarios pass
-# Check coverage report
-pytest --cov=app --cov-report=term-missing
-```
-
-### 4. Quality Checks
-
-```bash
-# Run all unit tests with coverage
-pytest --cov=app --cov-fail-under=100 --cov-report=html
-
-# Run all pre-commit hooks
-pre-commit run --all-files
-
-# Full test suite (unit + quality)
-./scripts/run_all_tests.sh
-```
-
-### 5. Commit and Push
-
-```bash
-# Stage changes
-git add .
-
 # Commit (pre-commit hooks run automatically)
-git commit -m "feat(issue-XX): implement feature"
+git commit -m "feat(P1.1): implement query models"
 
 # Push to remote
-git push origin issue/XX-ticket-name
+git push origin feature/P1.1-Query-Models
 ```
 
-### 6. Create Pull Request
+### 5. Create Pull Request
 
 ```bash
 gh pr create \
-  --title "feat: [Ticket title]" \
-  --body "$(cat <<'EOF'
-## Summary
-- [What was implemented]
-
-## Changes
-- [List of changes]
-
-## Testing
-- [x] Unit tests pass (pytest)
-- [x] 100% coverage achieved
-- [x] Pre-commit hooks pass
+  --title "feat(P1.1): implement query models" \
+  --body "## Summary
+- Implemented QueryRequest and QueryResponse models
 
 ## Closes
-Closes #XX
+Closes P1.1
 
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-EOF
-)"
+🤖 Generated with [Claude Code](https://claude.com/claude-code)"
 ```
 
-### 7. After Merge
+### 6. After Merge
 
 ```bash
 # Move ticket to completed
-mv issues/XX-ticket-name.md issues/completed/
+mv issues/P1.1-Query-Models.md issues/completed/
 
 # Update local main branch
 git checkout main
 git pull origin main
-
-# Ready for next ticket!
-ls -1 issues/*.md | head -1
 ```
 
 ## Progress Tracking
 
-### Check Progress
-
 ```bash
-# Count total tickets
-ls -1 issues/*.md 2>/dev/null | wc -l
+# Count active tickets
+ls -1 issues/P*.md 2>/dev/null | wc -l
 
 # Count completed tickets
 ls -1 issues/completed/*.md 2>/dev/null | wc -l
 
-# Calculate percentage complete
-echo "scale=2; $(ls -1 issues/completed/*.md 2>/dev/null | wc -l) / 36 * 100" | bc
-
-# View progress by phase
-for phase in {0..8}; do
-  start=$((phase * 10 / 3))
-  count=$(ls -1 issues/completed/${start}*.md 2>/dev/null | wc -l)
-  echo "Phase $phase: $count tickets completed"
-done
-```
-
-### Visualize Dependencies
-
-**Phase 0-1 Dependencies:**
-```
-00 ─┐
-01 ─┼─→ (Foundation complete)
-02 ─┤
-    ├─→ 03 → 04 → 05 ─┐
-    │         │        ├─→ 09 (App skeleton)
-    │         ├─→ 06 ──┤
-    │         └─→ 08 ──┘
-    └─→ 07 ─────────────┘
-```
-
-**Phase 2-3 Dependencies:**
-```
-09 ─┬─→ 10
-    └─→ 11
-
-07 → 13 → 14 → 15
-06 ────────────┘
-```
-
-**Phase 4-6 Dependencies:**
-```
-09 + 07 → 17 → 18
-                19
-
-09 + 07 → 21 → 22
-               23
-               24
-
-09 + 07 → 26 → 27
-               28
-```
-
-## Ticket Template
-
-To create a new ticket (if needed):
-
-```bash
-# Copy template
-cp issues/templates/ticket-template.md issues/XX-new-feature.md
-
-# Edit with ticket details
-nano issues/XX-new-feature.md
-```
-
-## Tips for Efficient Workflow
-
-### 1. Read Specs First
-Always check the specification before starting:
-- `specs/endpoints-*.md` - Endpoint behavior
-- `specs/data-models.md` - Request/response models
-- `specs/error-handling.md` - Error responses
-
-### 2. Follow TDD Strictly
-**Always write tests first:**
-1. Write failing test (RED)
-2. Implement minimum code (GREEN)
-3. Refactor for quality (REFACTOR)
-4. Repeat
-
-### 4. Use Existing Fixtures
-Reuse test fixtures from `tests/conftest.py`:
-- `client` - FastAPI TestClient
-- `mock_neo4j_driver` - Mocked Neo4j driver
-- `api_key` - Valid API key
-- `sample_node_data` - Sample node for testing
-
-### 5. Mock Neo4j Driver
-**In unit tests:** Always mock `GraphDatabase.driver`
-```python
-from unittest.mock import patch
-
-@patch('app.utils.neo4j_client.GraphDatabase.driver')
-def test_feature(mock_driver):
-    # Your test here
-```
-
-### 6. Check Dependencies
-Before starting a ticket:
-```bash
-# Check ticket dependencies section
-grep "## Dependencies" issues/XX-ticket-name.md -A 5
-
-# Verify dependencies are completed
-ls -1 issues/completed/ | grep "^05-"
-```
-
-### 7. Commit Frequently
-Small, focused commits are better:
-```bash
-# After RED phase
-git commit -m "test(issue-XX): add failing tests for feature"
-
-# After GREEN phase
-git commit -m "feat(issue-XX): implement feature to pass tests"
-
-# After REFACTOR phase
-git commit -m "refactor(issue-XX): improve code quality"
-```
-
-### 8. Keep Tests Green
-Never move to the next step if tests are failing:
-- RED phase: Tests should FAIL (expected)
-- GREEN phase: Tests should PASS
-- REFACTOR phase: Tests should still PASS
-- Before commit: All tests should PASS
-
-### 9. Watch Coverage
-Maintain 100% coverage throughout:
-```bash
-# After each implementation
-pytest --cov=app --cov-fail-under=100 --cov-report=term-missing
-
-# Check specific module
-pytest tests/test_module.py --cov=app.module --cov-report=term-missing
-```
-
-### 10. Run Smoke Tests Often
-Quick sanity check:
-```bash
-# Takes ~1 minute
-behave features/ --tags=@smoke
+# List by priority
+echo "P1 (High):" && ls issues/P1*.md 2>/dev/null | wc -l
+echo "P2 (Medium):" && ls issues/P2*.md 2>/dev/null | wc -l
+echo "P3 (Lower):" && ls issues/P3*.md 2>/dev/null | wc -l
+echo "P4 (Infrastructure):" && ls issues/P4*.md 2>/dev/null | wc -l
 ```
 
 ## Quality Gates
 
-Every ticket must pass these gates before PR:
+Every ticket must pass before PR:
 
-### ✅ Code Quality
 - [ ] Black formatting applied
-- [ ] Ruff linting passed (no warnings)
-- [ ] mypy type checking passed (no errors)
-- [ ] Bandit security scan passed
-
-### ✅ Testing
-- [ ] Unit tests written (TDD approach)
-- [ ] 100% code coverage for new code
-- [ ] BDD scenarios pass (if applicable)
-- [ ] All existing tests still pass
-
-### ✅ Documentation
-- [ ] Docstrings present (Google style)
-- [ ] Type hints on all functions
-- [ ] Comments for complex logic
-
-### ✅ Git Hygiene
-- [ ] Commits follow conventional commit format
-- [ ] Commit messages clear and descriptive
+- [ ] Ruff linting passed
+- [ ] mypy type checking passed
+- [ ] Unit tests written (TDD)
+- [ ] 100% code coverage
 - [ ] Pre-commit hooks pass
-- [ ] Branch up-to-date with main
-
-## Troubleshooting
-
-### Issue: Pre-commit hooks failing
-```bash
-pre-commit run --all-files
-# Fix reported issues
-pre-commit autoupdate
-```
-
-### Issue: Coverage below 100%
-```bash
-pytest --cov=app --cov-report=html
-xdg-open htmlcov/index.html  # View detailed report
-# Add tests for uncovered lines
-```
-
-### Issue: BDD tests failing
-```bash
-behave features/your_feature.feature -v
-# Check mock setup in features/environment.py
-# Verify endpoint implementation matches specification
-```
-
-### Issue: Merge conflicts
-```bash
-git checkout main && git pull
-git checkout issue/XX-ticket-name
-git merge main
-# Resolve conflicts
-git add . && git commit
-```
 
 ## References
 
-- **Development Guide:** `../CLAUDE.md` - Complete development workflow
-- **Specifications:** `../specs/` - API specifications
-- **BDD Tests:** `../features/` - Behavior-driven test scenarios
-- **Implementation Plan:** `../IMPLEMENTATION_PLAN.md` - Detailed roadmap
+- **Development Guide:** `../CLAUDE.md`
+- **Specifications:** `../specs/`
+- **BDD Tests:** `../features/`
 
 ## Project Status
 
-**Current Phase:** Foundation (Phase 0)
-**Tickets Completed:** 0/36
-**Tickets In Progress:** 0
-**Tickets Remaining:** 36
-
-**Next Ticket:** #00 - create-readme
-
-Start working: `cat issues/00-create-readme.md`
+**Completed:** 12 (P0.0-P0.11)
+**Active:** 22 (P1-P4)
+**Next Priority:** P1 - Query Execution & Fixes
