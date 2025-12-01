@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class Error(BaseModel):
@@ -379,7 +379,9 @@ class QueryMeta(BaseModel):
         ... )
     """
 
-    query_type: str = Field(..., description="Query type: 'r' (read) or 'w' (write)")
+    query_type: Literal["r", "w"] = Field(
+        ..., description="Query type: 'r' (read) or 'w' (write)"
+    )
     records_returned: int = Field(..., ge=0, description="Number of records returned")
     execution_time_ms: float = Field(
         ..., ge=0, description="Execution time in milliseconds"
@@ -394,27 +396,31 @@ class QueryResponse(BaseModel):
     Attributes:
         nodes: List of nodes from query results.
         edges: List of edges (relationships) from query results.
-        truncatedByLimit: Whether results were limited by LIMIT clause.
+        truncated_by_limit: Whether results were limited by LIMIT clause.
         meta: Optional query execution metadata.
 
     Examples:
         >>> response = QueryResponse(
         ...     nodes=[Node(id="1", data=NodeData(categories=["Person"], properties={}))],
         ...     edges=[],
-        ...     truncatedByLimit=False,
+        ...     truncated_by_limit=False,
         ...     meta=QueryMeta(query_type="r", records_returned=1, execution_time_ms=5.0)
         ... )
     """
 
     nodes: list[Node] = Field(..., description="Nodes from query results")
     edges: list[Edge] = Field(..., description="Edges from query results")
-    truncatedByLimit: bool = Field(  # noqa: N815
-        default=False, description="Whether results were truncated by LIMIT"
+    truncated_by_limit: bool = Field(
+        default=False,
+        alias="truncatedByLimit",
+        serialization_alias="truncatedByLimit",
+        description="Whether results were truncated by LIMIT",
     )
     meta: QueryMeta | None = Field(default=None, description="Query execution metadata")
 
-    model_config = {
-        "json_schema_extra": {
+    model_config = ConfigDict(
+        populate_by_name=True,
+        json_schema_extra={
             "example": {
                 "nodes": [
                     {
@@ -440,5 +446,5 @@ class QueryResponse(BaseModel):
                     "execution_time_ms": 12.5,
                 },
             }
-        }
-    }
+        },
+    )

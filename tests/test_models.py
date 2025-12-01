@@ -700,6 +700,17 @@ class TestQueryMetaModel:
 
         assert "query_type" in str(exc_info.value)
 
+    def test_query_meta_invalid_query_type_fails(self) -> None:
+        """Test that invalid query_type value raises ValidationError."""
+        with pytest.raises(ValidationError) as exc_info:
+            QueryMeta(
+                query_type="x",  # type: ignore[arg-type]
+                records_returned=10,
+                execution_time_ms=5.0,
+            )
+
+        assert "query_type" in str(exc_info.value)
+
 
 class TestQueryResponseModel:
     """Test cases for the QueryResponse model."""
@@ -710,7 +721,7 @@ class TestQueryResponseModel:
 
         assert response.nodes == []
         assert response.edges == []
-        assert response.truncatedByLimit is False
+        assert response.truncated_by_limit is False
         assert response.meta is None
 
     def test_query_response_with_nodes(self) -> None:
@@ -754,10 +765,10 @@ class TestQueryResponseModel:
         assert response.edges[0].data.type == "KNOWS"
 
     def test_query_response_truncated(self) -> None:
-        """Test QueryResponse with truncatedByLimit=True."""
-        response = QueryResponse(nodes=[], edges=[], truncatedByLimit=True)
+        """Test QueryResponse with truncated_by_limit=True."""
+        response = QueryResponse(nodes=[], edges=[], truncated_by_limit=True)
 
-        assert response.truncatedByLimit is True
+        assert response.truncated_by_limit is True
 
     def test_query_response_with_meta(self) -> None:
         """Test QueryResponse with metadata."""
@@ -802,11 +813,11 @@ class TestQueryResponseModel:
         response = QueryResponse(
             nodes=nodes,
             edges=edges,
-            truncatedByLimit=False,
+            truncated_by_limit=False,
             meta=meta,
         )
 
-        result = response.model_dump()
+        result = response.model_dump(by_alias=True)
 
         assert result == {
             "nodes": [
@@ -841,7 +852,7 @@ class TestQueryResponseModel:
         """Test QueryResponse serialization excluding None meta."""
         response = QueryResponse(nodes=[], edges=[])
 
-        result = response.model_dump(exclude_none=True)
+        result = response.model_dump(exclude_none=True, by_alias=True)
 
         assert result == {
             "nodes": [],
@@ -875,7 +886,7 @@ class TestQueryResponseModel:
 
         assert len(response.nodes) == 1
         assert response.nodes[0].id == "99"
-        assert response.truncatedByLimit is True
+        assert response.truncated_by_limit is True  # Alias maps to internal name
         assert response.meta is not None
         assert response.meta.query_type == "r"
 
