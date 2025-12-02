@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class Error(BaseModel):
@@ -222,4 +222,229 @@ class DatabaseListResponse(BaseModel):
     }
 
 
-# Additional domain-specific models will be added in later issues (13, 17, 21, 26)
+# Query Models (Linkurious format)
+
+
+class QueryRequest(BaseModel):
+    """Cypher query execution request.
+
+    Request body for POST /api/{database}/graph/query endpoint.
+
+    Attributes:
+        query: Cypher query string to execute.
+        parameters: Optional query parameters for parameterized queries.
+
+    Examples:
+        >>> request = QueryRequest(
+        ...     query="MATCH (n:Person) WHERE n.name = $name RETURN n",
+        ...     parameters={"name": "Alice"}
+        ... )
+        >>> request.query
+        'MATCH (n:Person) WHERE n.name = $name RETURN n'
+    """
+
+    query: str = Field(..., min_length=1, description="Cypher query string to execute")
+    parameters: dict[str, Any] = Field(
+        default_factory=dict, description="Query parameters"
+    )
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "query": "MATCH (n:Person) WHERE n.name = $name RETURN n LIMIT 10",
+                "parameters": {"name": "John"},
+            }
+        }
+    }
+
+
+class NodeData(BaseModel):
+    """Node data structure for Linkurious format.
+
+    Contains the node's labels (categories) and properties.
+
+    Attributes:
+        categories: List of node labels.
+        properties: Dictionary of node properties.
+
+    Examples:
+        >>> data = NodeData(
+        ...     categories=["Person", "Employee"],
+        ...     properties={"name": "Alice", "age": 30}
+        ... )
+    """
+
+    categories: list[str] = Field(..., description="Node labels")
+    properties: dict[str, Any] = Field(..., description="Node properties")
+
+
+class Node(BaseModel):
+    """Node representation in Linkurious format.
+
+    Attributes:
+        id: Node ID as string.
+        data: Node data containing categories and properties.
+
+    Examples:
+        >>> node = Node(
+        ...     id="123",
+        ...     data=NodeData(categories=["Person"], properties={"name": "Alice"})
+        ... )
+    """
+
+    id: str = Field(..., description="Node ID")
+    data: NodeData = Field(..., description="Node data")
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "id": "123",
+                "data": {
+                    "categories": ["Person"],
+                    "properties": {"name": "Alice", "age": 30},
+                },
+            }
+        }
+    }
+
+
+class EdgeData(BaseModel):
+    """Edge data structure for Linkurious format.
+
+    Contains the relationship type and properties.
+
+    Attributes:
+        type: Relationship type.
+        properties: Dictionary of relationship properties.
+
+    Examples:
+        >>> data = EdgeData(type="KNOWS", properties={"since": 2020})
+    """
+
+    type: str = Field(..., description="Relationship type")
+    properties: dict[str, Any] = Field(..., description="Relationship properties")
+
+
+class Edge(BaseModel):
+    """Edge (relationship) representation in Linkurious format.
+
+    Attributes:
+        id: Relationship ID as string.
+        source: Source node ID.
+        target: Target node ID.
+        data: Edge data containing type and properties.
+
+    Examples:
+        >>> edge = Edge(
+        ...     id="456",
+        ...     source="1",
+        ...     target="2",
+        ...     data=EdgeData(type="KNOWS", properties={"since": 2020})
+        ... )
+    """
+
+    id: str = Field(..., description="Relationship ID")
+    source: str = Field(..., description="Source node ID")
+    target: str = Field(..., description="Target node ID")
+    data: EdgeData = Field(..., description="Edge data")
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "id": "456",
+                "source": "1",
+                "target": "2",
+                "data": {
+                    "type": "KNOWS",
+                    "properties": {"since": 2020},
+                },
+            }
+        }
+    }
+
+
+class QueryMeta(BaseModel):
+    """Query execution metadata.
+
+    Attributes:
+        query_type: Query type indicator ("r" for read, "w" for write).
+        records_returned: Number of records returned by the query.
+        execution_time_ms: Query execution time in milliseconds.
+
+    Examples:
+        >>> meta = QueryMeta(
+        ...     query_type="r",
+        ...     records_returned=10,
+        ...     execution_time_ms=15.5
+        ... )
+    """
+
+    query_type: Literal["r", "w"] = Field(
+        ..., description="Query type: 'r' (read) or 'w' (write)"
+    )
+    records_returned: int = Field(..., ge=0, description="Number of records returned")
+    execution_time_ms: float = Field(
+        ..., ge=0, description="Execution time in milliseconds"
+    )
+
+
+class QueryResponse(BaseModel):
+    """Cypher query execution response in Linkurious format.
+
+    Response model for POST /api/{database}/graph/query endpoint.
+
+    Attributes:
+        nodes: List of nodes from query results.
+        edges: List of edges (relationships) from query results.
+        truncated_by_limit: Whether results were limited by LIMIT clause.
+        meta: Optional query execution metadata.
+
+    Examples:
+        >>> response = QueryResponse(
+        ...     nodes=[Node(id="1", data=NodeData(categories=["Person"], properties={}))],
+        ...     edges=[],
+        ...     truncated_by_limit=False,
+        ...     meta=QueryMeta(query_type="r", records_returned=1, execution_time_ms=5.0)
+        ... )
+    """
+
+    nodes: list[Node] = Field(..., description="Nodes from query results")
+    edges: list[Edge] = Field(..., description="Edges from query results")
+    truncated_by_limit: bool = Field(
+        default=False,
+        alias="truncatedByLimit",
+        serialization_alias="truncatedByLimit",
+        description="Whether results were truncated by LIMIT",
+    )
+    meta: QueryMeta | None = Field(default=None, description="Query execution metadata")
+
+    model_config = ConfigDict(
+        populate_by_name=True,
+        json_schema_extra={
+            "example": {
+                "nodes": [
+                    {
+                        "id": "1",
+                        "data": {
+                            "categories": ["Person"],
+                            "properties": {"name": "Alice"},
+                        },
+                    }
+                ],
+                "edges": [
+                    {
+                        "id": "100",
+                        "source": "1",
+                        "target": "2",
+                        "data": {"type": "KNOWS", "properties": {}},
+                    }
+                ],
+                "truncatedByLimit": False,
+                "meta": {
+                    "query_type": "r",
+                    "records_returned": 1,
+                    "execution_time_ms": 12.5,
+                },
+            }
+        },
+    )
