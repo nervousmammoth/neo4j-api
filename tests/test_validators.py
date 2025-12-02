@@ -6,7 +6,7 @@ blocks write operations and allows read-only queries.
 
 from __future__ import annotations
 
-from app.utils.validators import is_read_only_query
+from app.utils.validators import get_forbidden_keyword, is_read_only_query
 
 
 class TestIsReadOnlyQueryAllowed:
@@ -205,3 +205,84 @@ class TestIsReadOnlyQueryEdgeCases:
         """Keywords in strings with escaped quotes should not trigger."""
         query = "MATCH (n) WHERE n.text = 'fake\\'; DELETE' RETURN n"
         assert is_read_only_query(query) is True
+
+
+class TestGetForbiddenKeyword:
+    """Test cases for get_forbidden_keyword function."""
+
+    def test_returns_create_for_create_query(self) -> None:
+        """Returns 'CREATE' for CREATE queries."""
+        query = "CREATE (n:Person) RETURN n"
+        assert get_forbidden_keyword(query) == "CREATE"
+
+    def test_returns_delete_for_delete_query(self) -> None:
+        """Returns 'DELETE' for DELETE queries."""
+        query = "MATCH (n) DELETE n"
+        assert get_forbidden_keyword(query) == "DELETE"
+
+    def test_returns_detach_delete_for_detach_delete_query(self) -> None:
+        """Returns 'DETACH DELETE' for DETACH DELETE queries."""
+        query = "MATCH (n) DETACH DELETE n"
+        assert get_forbidden_keyword(query) == "DETACH DELETE"
+
+    def test_returns_merge_for_merge_query(self) -> None:
+        """Returns 'MERGE' for MERGE queries."""
+        query = "MERGE (n:Person {id: 1}) RETURN n"
+        assert get_forbidden_keyword(query) == "MERGE"
+
+    def test_returns_set_for_set_query(self) -> None:
+        """Returns 'SET' for SET queries."""
+        query = "MATCH (n) SET n.name = 'John' RETURN n"
+        assert get_forbidden_keyword(query) == "SET"
+
+    def test_returns_remove_for_remove_query(self) -> None:
+        """Returns 'REMOVE' for REMOVE queries."""
+        query = "MATCH (n) REMOVE n.age RETURN n"
+        assert get_forbidden_keyword(query) == "REMOVE"
+
+    def test_returns_drop_for_drop_query(self) -> None:
+        """Returns 'DROP' for DROP queries."""
+        query = "DROP INDEX index_name"
+        assert get_forbidden_keyword(query) == "DROP"
+
+    def test_returns_none_for_read_only_query(self) -> None:
+        """Returns None for read-only queries."""
+        query = "MATCH (n) RETURN n"
+        assert get_forbidden_keyword(query) is None
+
+    def test_returns_none_for_empty_query(self) -> None:
+        """Returns None for empty query."""
+        assert get_forbidden_keyword("") is None
+
+    def test_returns_none_for_whitespace_only_query(self) -> None:
+        """Returns None for whitespace-only query."""
+        assert get_forbidden_keyword("   \n  \t  ") is None
+
+    def test_ignores_keyword_in_string_literal(self) -> None:
+        """Ignores keywords inside string literals."""
+        query = "MATCH (n) WHERE n.text = 'CREATE TABLE' RETURN n"
+        assert get_forbidden_keyword(query) is None
+
+    def test_ignores_keyword_in_comment(self) -> None:
+        """Ignores keywords inside comments."""
+        query = """
+        // This mentions CREATE
+        MATCH (n) RETURN n
+        """
+        assert get_forbidden_keyword(query) is None
+
+    def test_returns_first_keyword_when_multiple(self) -> None:
+        """Returns the first forbidden keyword when multiple exist."""
+        query = "MATCH (n) CREATE (m) DELETE n RETURN m"
+        # CREATE comes first in the query
+        assert get_forbidden_keyword(query) == "CREATE"
+
+    def test_handles_mixed_case_keyword(self) -> None:
+        """Handles mixed case keywords."""
+        query = "CrEaTe (n:Person) RETURN n"
+        assert get_forbidden_keyword(query) == "CREATE"
+
+    def test_handles_mixed_case_detach_delete(self) -> None:
+        """Handles mixed case DETACH DELETE."""
+        query = "MATCH (n) DeTaCh   DeLeTe n"
+        assert get_forbidden_keyword(query) == "DETACH DELETE"

@@ -38,6 +38,9 @@ class Settings(BaseSettings):
     neo4j_max_connection_lifetime: int = Field(default=3600, ge=1)
     neo4j_max_connection_pool_size: int = Field(default=50, ge=1)
     neo4j_connection_timeout: int = Field(default=30, ge=1)
+    query_timeout_seconds: int = Field(
+        default=60, ge=1, description="Query execution timeout in seconds"
+    )
 
     # API Configuration
     api_key: SecretStr = Field(..., description="API authentication key")

@@ -9,11 +9,12 @@ from unittest.mock import MagicMock, create_autospec
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from neo4j.exceptions import Neo4jError
+from neo4j.exceptions import ClientError, Neo4jError
 from neo4j.graph import Node as Neo4jNode
 from neo4j.graph import Relationship as Neo4jRelationship
 
-from app.config import Settings  # noqa: TCH001
+from app.config import Settings, get_settings
+from app.routers.query import router
 
 
 class TestQueryExecutionSuccess:
@@ -29,16 +30,12 @@ class TestQueryExecutionSuccess:
             settings_fixture: Test settings with configured values.
         """
         # Arrange
-        from app.routers.query import router
-
         app = FastAPI()
         app.include_router(router)
 
         mock_client = MagicMock()
         mock_client.execute_query.return_value = []
         app.state.neo4j_client = mock_client
-
-        from app.config import get_settings
 
         app.dependency_overrides[get_settings] = lambda: settings_fixture
 
@@ -64,16 +61,12 @@ class TestQueryExecutionSuccess:
             settings_fixture: Test settings with configured values.
         """
         # Arrange
-        from app.routers.query import router
-
         app = FastAPI()
         app.include_router(router)
 
         mock_client = MagicMock()
         mock_client.execute_query.return_value = []
         app.state.neo4j_client = mock_client
-
-        from app.config import get_settings
 
         app.dependency_overrides[get_settings] = lambda: settings_fixture
 
@@ -106,8 +99,6 @@ class TestQueryExecutionSuccess:
             settings_fixture: Test settings with configured values.
         """
         # Arrange
-        from app.routers.query import router
-
         app = FastAPI()
         app.include_router(router)
 
@@ -223,16 +214,12 @@ class TestQueryExecutionSuccess:
             settings_fixture: Test settings with configured values.
         """
         # Arrange
-        from app.routers.query import router
-
         app = FastAPI()
         app.include_router(router)
 
         mock_client = MagicMock()
         mock_client.execute_query.return_value = []
         app.state.neo4j_client = mock_client
-
-        from app.config import get_settings
 
         app.dependency_overrides[get_settings] = lambda: settings_fixture
 
@@ -264,16 +251,12 @@ class TestQueryExecutionSuccess:
             settings_fixture: Test settings with configured values.
         """
         # Arrange
-        from app.routers.query import router
-
         app = FastAPI()
         app.include_router(router)
 
         mock_client = MagicMock()
         mock_client.execute_query.return_value = []
         app.state.neo4j_client = mock_client
-
-        from app.config import get_settings
 
         app.dependency_overrides[get_settings] = lambda: settings_fixture
 
@@ -302,16 +285,12 @@ class TestQueryExecutionSuccess:
             settings_fixture: Test settings with configured values.
         """
         # Arrange
-        from app.routers.query import router
-
         app = FastAPI()
         app.include_router(router)
 
         mock_client = MagicMock()
         mock_client.execute_query.return_value = []
         app.state.neo4j_client = mock_client
-
-        from app.config import get_settings
 
         app.dependency_overrides[get_settings] = lambda: settings_fixture
 
@@ -723,16 +702,12 @@ class TestQueryEdgeCases:
             settings_fixture: Test settings with configured values.
         """
         # Arrange
-        from app.routers.query import router
-
         app = FastAPI()
         app.include_router(router)
 
         mock_client = MagicMock()
         mock_client.execute_query.return_value = []
         app.state.neo4j_client = mock_client
-
-        from app.config import get_settings
 
         app.dependency_overrides[get_settings] = lambda: settings_fixture
 
@@ -758,16 +733,12 @@ class TestQueryEdgeCases:
             settings_fixture: Test settings with configured values.
         """
         # Arrange
-        from app.routers.query import router
-
         app = FastAPI()
         app.include_router(router)
 
         mock_client = MagicMock()
         mock_client.execute_query.return_value = []
         app.state.neo4j_client = mock_client
-
-        from app.config import get_settings
 
         app.dependency_overrides[get_settings] = lambda: settings_fixture
 
@@ -791,20 +762,45 @@ class TestQueryEdgeCases:
 class TestQueryHelperFunctions:
     """Test internal helper functions for coverage."""
 
-    def test_get_forbidden_keyword_returns_none_for_read_query(self) -> None:
-        """Test that _get_forbidden_keyword returns None for read-only queries."""
-        from app.routers.query import _get_forbidden_keyword
+    def test_truncate_query_short_query(self) -> None:
+        """Test that short queries are not truncated."""
+        from app.routers.query import _truncate_query
 
-        # Valid read-only query should return None
-        result = _get_forbidden_keyword("MATCH (n) RETURN n")
+        result = _truncate_query("MATCH (n) RETURN n")
+        assert result == "MATCH (n) RETURN n"
+
+    def test_truncate_query_long_query(self) -> None:
+        """Test that long queries are truncated."""
+        from app.routers.query import _truncate_query
+
+        long_query = "MATCH (n) " * 20  # 200 chars
+        result = _truncate_query(long_query)
+        assert len(result) < len(long_query)
+        assert result.endswith("... [truncated]")
+
+    def test_extract_error_position_with_column(self) -> None:
+        """Test that position is extracted from column info."""
+        from app.routers.query import _extract_error_position
+
+        error_msg = "Invalid input 'X' (line 1, column 10)"
+        result = _extract_error_position(error_msg)
+        assert result == 10
+
+    def test_extract_error_position_with_position(self) -> None:
+        """Test that position is extracted from position info."""
+        from app.routers.query import _extract_error_position
+
+        error_msg = "Syntax error at position 25"
+        result = _extract_error_position(error_msg)
+        assert result == 25
+
+    def test_extract_error_position_no_position(self) -> None:
+        """Test that None is returned when no position info."""
+        from app.routers.query import _extract_error_position
+
+        error_msg = "Unknown error occurred"
+        result = _extract_error_position(error_msg)
         assert result is None
-
-    def test_get_forbidden_keyword_finds_create(self) -> None:
-        """Test that _get_forbidden_keyword finds CREATE keyword."""
-        from app.routers.query import _get_forbidden_keyword
-
-        result = _get_forbidden_keyword("CREATE (n) RETURN n")
-        assert result == "CREATE"
 
     def test_extract_graph_elements_handles_nested_lists(
         self,
@@ -1035,3 +1031,211 @@ class TestQueryHelperFunctions:
         # No nodes or edges extracted from scalar values
         assert len(data["nodes"]) == 0
         assert len(data["edges"]) == 0
+
+
+class TestQueryResponseEnhancements:
+    """Test new response enhancements from PR review fixes."""
+
+    def test_403_includes_allowed_operations(
+        self,
+        settings_fixture: Settings,
+    ) -> None:
+        """Test that 403 response includes allowed_operations list.
+
+        Args:
+            settings_fixture: Test settings with configured values.
+        """
+        # Arrange
+        app = FastAPI()
+        app.include_router(router)
+
+        mock_client = MagicMock()
+        app.state.neo4j_client = mock_client
+
+        app.dependency_overrides[get_settings] = lambda: settings_fixture
+
+        client = TestClient(app)
+
+        # Act
+        response = client.post(
+            "/api/neo4j/graph/query",
+            headers={"X-API-Key": "test-api-key-12345"},
+            json={"query": "CREATE (n:Person) RETURN n"},
+        )
+
+        # Assert
+        assert response.status_code == 403
+        error = response.json()["error"]
+        assert "allowed_operations" in error["details"]
+        assert "MATCH" in error["details"]["allowed_operations"]
+        assert "RETURN" in error["details"]["allowed_operations"]
+
+    def test_403_includes_detach_delete_keyword(
+        self,
+        settings_fixture: Settings,
+    ) -> None:
+        """Test that DETACH DELETE is correctly identified.
+
+        Args:
+            settings_fixture: Test settings with configured values.
+        """
+        # Arrange
+        app = FastAPI()
+        app.include_router(router)
+
+        mock_client = MagicMock()
+        app.state.neo4j_client = mock_client
+
+        app.dependency_overrides[get_settings] = lambda: settings_fixture
+
+        client = TestClient(app)
+
+        # Act
+        response = client.post(
+            "/api/neo4j/graph/query",
+            headers={"X-API-Key": "test-api-key-12345"},
+            json={"query": "MATCH (n) DETACH DELETE n"},
+        )
+
+        # Assert
+        assert response.status_code == 403
+        error = response.json()["error"]
+        assert error["details"]["forbidden_keyword"] == "DETACH DELETE"
+
+    def test_400_includes_position_when_available(
+        self,
+        settings_fixture: Settings,
+    ) -> None:
+        """Test that syntax error includes position when available.
+
+        Args:
+            settings_fixture: Test settings with configured values.
+        """
+        # Arrange
+        app = FastAPI()
+        app.include_router(router)
+
+        mock_client = MagicMock()
+        mock_client.execute_query.side_effect = Neo4jError(
+            "Invalid input 'X' (line 1, column 10)"
+        )
+        app.state.neo4j_client = mock_client
+
+        app.dependency_overrides[get_settings] = lambda: settings_fixture
+
+        client = TestClient(app)
+
+        # Act
+        response = client.post(
+            "/api/neo4j/graph/query",
+            headers={"X-API-Key": "test-api-key-12345"},
+            json={"query": "MATCH X RETURN n"},
+        )
+
+        # Assert
+        assert response.status_code == 400
+        error = response.json()["error"]
+        assert error["details"]["position"] == 10
+
+    def test_error_responses_truncate_long_queries(
+        self,
+        settings_fixture: Settings,
+    ) -> None:
+        """Test that long queries are truncated in error responses.
+
+        Args:
+            settings_fixture: Test settings with configured values.
+        """
+        # Arrange
+        app = FastAPI()
+        app.include_router(router)
+
+        mock_client = MagicMock()
+        app.state.neo4j_client = mock_client
+
+        app.dependency_overrides[get_settings] = lambda: settings_fixture
+
+        client = TestClient(app)
+
+        # Create a long query (>100 chars)
+        long_query = "CREATE (n:Person {name: '" + "A" * 150 + "'}) RETURN n"
+
+        # Act
+        response = client.post(
+            "/api/neo4j/graph/query",
+            headers={"X-API-Key": "test-api-key-12345"},
+            json={"query": long_query},
+        )
+
+        # Assert
+        assert response.status_code == 403
+        error = response.json()["error"]
+        query_in_response = error["details"]["query"]
+        assert len(query_in_response) < len(long_query)
+        assert query_in_response.endswith("... [truncated]")
+
+    def test_query_timeout_returns_504(
+        self,
+        settings_fixture: Settings,
+    ) -> None:
+        """Test that query timeout returns 504.
+
+        Args:
+            settings_fixture: Test settings with configured values.
+        """
+        # Arrange
+        app = FastAPI()
+        app.include_router(router)
+
+        mock_client = MagicMock()
+        mock_client.execute_query.side_effect = ClientError("Query execution timed out")
+        app.state.neo4j_client = mock_client
+
+        app.dependency_overrides[get_settings] = lambda: settings_fixture
+
+        client = TestClient(app)
+
+        # Act
+        response = client.post(
+            "/api/neo4j/graph/query",
+            headers={"X-API-Key": "test-api-key-12345"},
+            json={"query": "MATCH (n)-[*10..20]-(m) RETURN n, m"},
+        )
+
+        # Assert
+        assert response.status_code == 504
+        error = response.json()["error"]
+        assert error["code"] == "QUERY_TIMEOUT"
+        assert "timeout_seconds" in error["details"]
+
+    def test_non_timeout_client_error_raises(
+        self,
+        settings_fixture: Settings,
+    ) -> None:
+        """Test that non-timeout ClientError is re-raised and caught as Neo4jError.
+
+        Args:
+            settings_fixture: Test settings with configured values.
+        """
+        # Arrange
+        app = FastAPI()
+        app.include_router(router)
+
+        mock_client = MagicMock()
+        # ClientError that is not about timeout - will be re-raised
+        mock_client.execute_query.side_effect = ClientError("Some other client error")
+        app.state.neo4j_client = mock_client
+
+        app.dependency_overrides[get_settings] = lambda: settings_fixture
+
+        client = TestClient(app, raise_server_exceptions=False)
+
+        # Act
+        response = client.post(
+            "/api/neo4j/graph/query",
+            headers={"X-API-Key": "test-api-key-12345"},
+            json={"query": "MATCH (n) RETURN n"},
+        )
+
+        # Assert - should get 500 as ClientError is re-raised
+        assert response.status_code == 500

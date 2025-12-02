@@ -9,12 +9,15 @@ from __future__ import annotations
 import logging
 import re
 import time
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from fastapi import APIRouter, Depends, Path, Request
 from fastapi.responses import JSONResponse
-from neo4j.exceptions import Neo4jError
+from neo4j.exceptions import ClientError, Neo4jError
+from neo4j.graph import Node as Neo4jNode
+from neo4j.graph import Relationship as Neo4jRelationship
 
+from app.config import get_settings
 from app.dependencies import verify_api_key
 from app.models import (
     Edge,
@@ -25,11 +28,7 @@ from app.models import (
     QueryRequest,
     QueryResponse,
 )
-from app.utils.validators import is_read_only_query
-
-if TYPE_CHECKING:
-    from neo4j.graph import Node as Neo4jNode
-    from neo4j.graph import Relationship as Neo4jRelationship
+from app.utils.validators import get_forbidden_keyword, is_read_only_query
 
 logger = logging.getLogger(__name__)
 
@@ -38,21 +37,50 @@ router = APIRouter(
     tags=["query"],
 )
 
+# Allowed read operations for error message
+ALLOWED_OPERATIONS = [
+    "MATCH",
+    "RETURN",
+    "WITH",
+    "WHERE",
+    "ORDER BY",
+    "LIMIT",
+    "SKIP",
+    "CALL",
+    "SHOW",
+    "UNWIND",
+    "OPTIONAL MATCH",
+]
 
-def _get_forbidden_keyword(query: str) -> str | None:
-    """Extract the forbidden keyword from a query.
+
+def _truncate_query(query: str, max_length: int = 100) -> str:
+    """Truncate a query string for inclusion in error responses.
 
     Args:
-        query: The Cypher query string.
+        query: The query string to truncate.
+        max_length: Maximum length before truncation.
 
     Returns:
-        The first forbidden keyword found, or None.
+        The original query if <= max_length, otherwise truncated with indicator.
     """
-    # Pattern to find write keywords
-    pattern = r"\b(CREATE|DELETE|MERGE|SET|REMOVE|DROP)\b"
-    match = re.search(pattern, query, re.IGNORECASE)
+    if len(query) <= max_length:
+        return query
+    return query[:max_length] + "... [truncated]"
+
+
+def _extract_error_position(error_msg: str) -> int | None:
+    """Extract column position from Neo4j error message.
+
+    Args:
+        error_msg: The error message from Neo4j.
+
+    Returns:
+        The column position if found, None otherwise.
+    """
+    # Pattern: "(line X, column Y)" or "position Y"
+    match = re.search(r"column\s+(\d+)|position\s+(\d+)", error_msg, re.IGNORECASE)
     if match:
-        return match.group(1).upper()
+        return int(match.group(1) or match.group(2))
     return None
 
 
@@ -109,10 +137,6 @@ def _extract_graph_elements(
     Returns:
         Tuple of (nodes, edges) in Linkurious format.
     """
-    # Import here to avoid circular imports and allow mocking
-    from neo4j.graph import Node as Neo4jNode
-    from neo4j.graph import Relationship as Neo4jRelationship
-
     nodes: dict[str, Node] = {}  # Use dict for deduplication by ID
     edges: dict[str, Edge] = {}  # Use dict for deduplication by ID
 
@@ -154,6 +178,7 @@ def _extract_graph_elements(
         400: {"description": "Invalid query syntax"},
         403: {"description": "Write operation forbidden or authentication failed"},
         503: {"description": "Neo4j unavailable"},
+        504: {"description": "Query execution timeout"},
     },
 )
 async def execute_query(
@@ -189,7 +214,7 @@ async def execute_query(
 
     # Validate query is read-only
     if not is_read_only_query(query_request.query):
-        forbidden_keyword = _get_forbidden_keyword(query_request.query)
+        forbidden_keyword = get_forbidden_keyword(query_request.query)
         logger.warning(
             "Write operation blocked: %s in query",
             forbidden_keyword,
@@ -201,14 +226,16 @@ async def execute_query(
                     "code": "WRITE_OPERATION_FORBIDDEN",
                     "message": "Write operations are not allowed. This API is read-only.",
                     "details": {
-                        "query": query_request.query,
+                        "query": _truncate_query(query_request.query),
                         "forbidden_keyword": forbidden_keyword,
+                        "allowed_operations": ALLOWED_OPERATIONS,
                     },
                 }
             },
         )
 
     # Execute query
+    settings = get_settings()
     try:
         start_time = time.time()
 
@@ -216,6 +243,7 @@ async def execute_query(
             query=query_request.query,
             parameters=query_request.parameters,
             database=database,
+            timeout=float(settings.query_timeout_seconds),
         )
 
         execution_time_ms = (time.time() - start_time) * 1000
@@ -234,18 +262,46 @@ async def execute_query(
             ),
         )
 
+    except ClientError as e:
+        error_msg = str(e).lower()
+        # Check for timeout-related errors
+        if "timeout" in error_msg or "timed out" in error_msg:
+            logger.warning("Query execution timed out: %s", e)
+            return JSONResponse(
+                status_code=504,
+                content={
+                    "error": {
+                        "code": "QUERY_TIMEOUT",
+                        "message": "Query execution exceeded timeout limit",
+                        "details": {
+                            "timeout_seconds": settings.query_timeout_seconds,
+                            "query": _truncate_query(query_request.query),
+                        },
+                    }
+                },
+            )
+        # Re-raise for other client errors to be handled below
+        raise
+
     except Neo4jError as e:
         logger.error("Query execution failed: %s", e)
+        error_msg = str(e)
+        position = _extract_error_position(error_msg)
+
+        details: dict[str, Any] = {
+            "query": _truncate_query(query_request.query),
+            "neo4j_error": error_msg,
+        }
+        if position is not None:
+            details["position"] = position
+
         return JSONResponse(
             status_code=400,
             content={
                 "error": {
                     "code": "QUERY_SYNTAX_ERROR",
                     "message": "Invalid Cypher query syntax",
-                    "details": {
-                        "query": query_request.query,
-                        "neo4j_error": str(e),
-                    },
+                    "details": details,
                 }
             },
         )
