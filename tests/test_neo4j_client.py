@@ -155,7 +155,7 @@ def test_execute_query_basic(
     )
 
     # Verify query was executed
-    mock_neo4j_session.run.assert_called_once_with(query, {})
+    mock_neo4j_session.run.assert_called_once_with(query, {}, timeout=None)
 
     # Verify results
     assert len(result) == 2
@@ -191,7 +191,7 @@ def test_execute_query_with_parameters(
     result = client.execute_query(query, parameters=parameters)
 
     # Verify query was executed with parameters
-    mock_neo4j_session.run.assert_called_once_with(query, parameters)
+    mock_neo4j_session.run.assert_called_once_with(query, parameters, timeout=None)
     assert len(result) == 1
     assert result[0] == {"name": "Alice"}
 

@@ -83,3 +83,37 @@ def is_read_only_query(query: str) -> bool:
 
     # Check for write keywords - return True if no write patterns found
     return not WRITE_PATTERN.search(cleaned_query)
+
+
+def get_forbidden_keyword(query: str) -> str | None:
+    """Extract the first forbidden write keyword from a query.
+
+    This function identifies which specific write keyword caused a query
+    to be rejected as non-read-only.
+
+    Args:
+        query: Cypher query string to analyze.
+
+    Returns:
+        The forbidden keyword (uppercase) if found, None otherwise.
+
+    Examples:
+        >>> get_forbidden_keyword("CREATE (n:Person) RETURN n")
+        'CREATE'
+        >>> get_forbidden_keyword("MATCH (n) DETACH DELETE n")
+        'DETACH DELETE'
+        >>> get_forbidden_keyword("MATCH (n) RETURN n")
+        None
+    """
+    if not query or not query.strip():
+        return None
+
+    # Remove comments and string literals to avoid false positives
+    cleaned_query = _remove_comments(query)
+    cleaned_query = _remove_string_literals(cleaned_query)
+
+    match = WRITE_PATTERN.search(cleaned_query)
+    if match:
+        # Normalize whitespace for DETACH DELETE case
+        return " ".join(match.group(0).upper().split())
+    return None

@@ -70,6 +70,7 @@ class Neo4jClient:
         query: str,
         parameters: dict[str, Any] | None = None,
         database: str | None = None,
+        timeout: float | None = None,
     ) -> list[dict[str, Any]]:
         """Execute a Cypher query.
 
@@ -77,6 +78,7 @@ class Neo4jClient:
             query: Cypher query string.
             parameters: Query parameters (optional).
             database: Database name (optional, uses default if not specified).
+            timeout: Query timeout in seconds (optional).
 
         Returns:
             List of result records as dictionaries.
@@ -89,7 +91,7 @@ class Neo4jClient:
 
         try:
             with self.driver.session(database=db) as session:
-                result = session.run(query, params)
+                result = session.run(query, params, timeout=timeout)
                 records = [record.data() for record in result]
                 logger.debug(
                     "Executed query on database '%s', returned %d records",
