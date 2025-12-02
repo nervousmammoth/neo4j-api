@@ -64,11 +64,12 @@ omit = [
     "*/node_modules/*",
     "*/__init__.py",
     "*/conftest.py",
-    # Skeleton files - will be implemented in future issues
-    # app/dependencies.py - IMPLEMENTED in Issue 08
-    # app/main.py - IMPLEMENTED in Issue 09
-    # app/models.py - IMPLEMENTED in Issue 07
-    "app/routers/*.py",
+    # Integration tests excluded from unit coverage
+    "tests/integration/*",
+    # Skeleton router files - will be implemented in future issues
+    "app/routers/nodes.py",
+    "app/routers/schema.py",
+    "app/routers/search.py",
 ]
 
 # CRITICAL: 100% coverage required for all metrics

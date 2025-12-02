@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, cast
 from fastapi import FastAPI, Request
 
 from app.config import get_settings
-from app.routers import health
+from app.routers import health, query
 from app.utils.neo4j_client import Neo4jClient
 
 if TYPE_CHECKING:
@@ -100,7 +100,4 @@ def get_neo4j_client(request: Request) -> Neo4jClient:
 
 # Register routers
 app.include_router(health.router)
-
-# Additional routers will be added in subsequent issues:
-# app.include_router(search.router)
-# etc.
+app.include_router(query.router)
