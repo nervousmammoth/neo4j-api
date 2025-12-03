@@ -58,7 +58,11 @@ if [ "$SKIP_UNIT_TESTS" = false ]; then
         exit 1
     fi
 
+    # Exclude integration tests (they require a running Neo4j instance)
+    # To run integration tests: docker compose -f docker-compose.test.yml up -d --wait
+    #                          pytest tests/integration/ -v -m integration
     if ! pytest tests/ \
+        --ignore=tests/integration \
         --cov=app \
         --cov-report=term-missing \
         --cov-report=html:htmlcov \
