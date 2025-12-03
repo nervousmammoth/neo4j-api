@@ -15,7 +15,13 @@ from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
 from app.config import get_settings
-from app.models import Database, DatabaseListResponse, HealthResponse
+from app.models import (
+    Database,
+    DatabaseListResponse,
+    Error,
+    ErrorResponse,
+    HealthResponse,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -124,16 +130,13 @@ async def list_databases(request: Request) -> DatabaseListResponse | JSONRespons
 
     if neo4j_client is None:
         logger.warning("Database list failed: Neo4j client not initialized")
-        return JSONResponse(
-            status_code=503,
-            content={
-                "error": {
-                    "code": "NEO4J_UNAVAILABLE",
-                    "message": "Neo4j client not initialized",
-                    "details": {},
-                }
-            },
+        error_response = ErrorResponse(
+            error=Error(
+                code="NEO4J_UNAVAILABLE",
+                message="Neo4j client not initialized",
+            )
         )
+        return JSONResponse(status_code=503, content=error_response.model_dump())
 
     try:
         # Query system database for database list
@@ -157,13 +160,11 @@ async def list_databases(request: Request) -> DatabaseListResponse | JSONRespons
 
     except Exception as e:
         logger.error("Database list failed: %s", e)
-        return JSONResponse(
-            status_code=500,
-            content={
-                "error": {
-                    "code": "DATABASE_QUERY_ERROR",
-                    "message": f"Failed to list databases: {e!s}",
-                    "details": {},
-                }
-            },
+        error_response = ErrorResponse(
+            error=Error(
+                code="DATABASE_QUERY_ERROR",
+                message="Failed to list databases",
+                details={"reason": str(e)},
+            )
         )
+        return JSONResponse(status_code=500, content=error_response.model_dump())

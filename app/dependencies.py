@@ -12,6 +12,7 @@ from typing import Annotated
 from fastapi import Depends, Header, HTTPException
 
 from app.config import Settings, get_settings
+from app.models import Error, ErrorResponse
 
 
 async def verify_api_key(
@@ -42,29 +43,24 @@ async def verify_api_key(
     """
     # Check if API key is missing, empty, or whitespace-only
     if not x_api_key or not x_api_key.strip():
-        raise HTTPException(
-            status_code=403,
-            detail={
-                "error": {
-                    "code": "MISSING_API_KEY",
-                    "message": "API key is required",
-                    "details": {"header": "X-API-Key"},
-                }
-            },
+        error_response = ErrorResponse(
+            error=Error(
+                code="MISSING_API_KEY",
+                message="API key is required",
+                details={"header": "X-API-Key"},
+            )
         )
+        raise HTTPException(status_code=403, detail=error_response.model_dump())
 
     # Check if API key matches configured value (case-sensitive, constant-time)
     if not secrets.compare_digest(x_api_key, settings.api_key.get_secret_value()):
-        raise HTTPException(
-            status_code=403,
-            detail={
-                "error": {
-                    "code": "INVALID_API_KEY",
-                    "message": "Invalid API key provided",
-                    "details": {},
-                }
-            },
+        error_response = ErrorResponse(
+            error=Error(
+                code="INVALID_API_KEY",
+                message="Invalid API key provided",
+            )
         )
+        raise HTTPException(status_code=403, detail=error_response.model_dump())
 
     # API key is valid - return None (dependency succeeds)
     return None

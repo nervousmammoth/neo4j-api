@@ -31,7 +31,7 @@ class TestErrorModel:
 
         assert error.code == "NODE_NOT_FOUND"
         assert error.message == "Node with ID '12345' not found"
-        assert error.details is None
+        assert error.details == {}
 
     def test_error_creation_with_details(self) -> None:
         """Test creating Error with optional details field."""
@@ -46,7 +46,7 @@ class TestErrorModel:
         assert error.details == {"forbidden_keyword": "CREATE", "line": 1}
 
     def test_error_serialization_without_details(self) -> None:
-        """Test Error serialization to dict without details."""
+        """Test Error serialization to dict without details defaults to empty dict."""
         error = Error(code="AUTH_FAILED", message="Invalid API key")
 
         result = error.model_dump()
@@ -54,7 +54,7 @@ class TestErrorModel:
         assert result == {
             "code": "AUTH_FAILED",
             "message": "Invalid API key",
-            "details": None,
+            "details": {},
         }
 
     def test_error_serialization_with_details(self) -> None:
@@ -73,14 +73,18 @@ class TestErrorModel:
             "details": {"database": "neo4j", "timeout": 5000},
         }
 
-    def test_error_serialization_exclude_none(self) -> None:
-        """Test Error serialization excluding None values."""
+    def test_error_serialization_includes_empty_details(self) -> None:
+        """Test Error serialization always includes details (even when empty)."""
         error = Error(code="TEST_ERROR", message="Test message")
 
-        result = error.model_dump(exclude_none=True)
+        result = error.model_dump()
 
-        assert result == {"code": "TEST_ERROR", "message": "Test message"}
-        assert "details" not in result
+        assert result == {
+            "code": "TEST_ERROR",
+            "message": "Test message",
+            "details": {},
+        }
+        assert "details" in result
 
     def test_error_field_validation_missing_code(self) -> None:
         """Test that Error requires code field."""
@@ -121,7 +125,7 @@ class TestErrorResponseModel:
 
         assert response.error.code == "NOT_FOUND"
         assert response.error.message == "Resource not found"
-        assert response.error.details is None
+        assert response.error.details == {}
 
     def test_error_response_creation_with_details(self) -> None:
         """Test creating ErrorResponse with Error containing details."""
@@ -155,7 +159,7 @@ class TestErrorResponseModel:
         }
 
     def test_error_response_serialization_without_details(self) -> None:
-        """Test ErrorResponse serialization when Error has no details."""
+        """Test ErrorResponse serialization when Error has no details defaults to empty dict."""
         error = Error(code="AUTH_REQUIRED", message="Authentication required")
         response = ErrorResponse(error=error)
 
@@ -165,21 +169,25 @@ class TestErrorResponseModel:
             "error": {
                 "code": "AUTH_REQUIRED",
                 "message": "Authentication required",
-                "details": None,
+                "details": {},
             }
         }
 
-    def test_error_response_serialization_exclude_none(self) -> None:
-        """Test ErrorResponse serialization excluding None values."""
+    def test_error_response_serialization_always_includes_details(self) -> None:
+        """Test ErrorResponse serialization always includes details (empty dict when no details)."""
         error = Error(code="SIMPLE_ERROR", message="Simple error message")
         response = ErrorResponse(error=error)
 
-        result = response.model_dump(exclude_none=True)
+        result = response.model_dump()
 
         assert result == {
-            "error": {"code": "SIMPLE_ERROR", "message": "Simple error message"}
+            "error": {
+                "code": "SIMPLE_ERROR",
+                "message": "Simple error message",
+                "details": {},
+            }
         }
-        assert "details" not in result["error"]
+        assert "details" in result["error"]
 
     def test_error_response_json_structure_matches_spec(self) -> None:
         """Test that JSON structure matches Linkurious API specification."""

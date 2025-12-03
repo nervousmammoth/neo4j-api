@@ -22,6 +22,8 @@ from app.dependencies import verify_api_key
 from app.models import (
     Edge,
     EdgeData,
+    Error,
+    ErrorResponse,
     Node,
     NodeData,
     QueryMeta,
@@ -202,15 +204,13 @@ async def execute_query(
     neo4j_client = getattr(request.app.state, "neo4j_client", None)
     if neo4j_client is None:
         logger.warning("Neo4j client not available for query execution")
-        return JSONResponse(
-            status_code=503,
-            content={
-                "error": {
-                    "code": "NEO4J_UNAVAILABLE",
-                    "message": "Neo4j database is not available",
-                }
-            },
+        error_response = ErrorResponse(
+            error=Error(
+                code="NEO4J_UNAVAILABLE",
+                message="Neo4j database is not available",
+            )
         )
+        return JSONResponse(status_code=503, content=error_response.model_dump())
 
     # Validate query is read-only
     if not is_read_only_query(query_request.query):
@@ -219,20 +219,18 @@ async def execute_query(
             "Write operation blocked: %s in query",
             forbidden_keyword,
         )
-        return JSONResponse(
-            status_code=403,
-            content={
-                "error": {
-                    "code": "WRITE_OPERATION_FORBIDDEN",
-                    "message": "Write operations are not allowed. This API is read-only.",
-                    "details": {
-                        "query": _truncate_query(query_request.query),
-                        "forbidden_keyword": forbidden_keyword,
-                        "allowed_operations": ALLOWED_OPERATIONS,
-                    },
-                }
-            },
+        error_response = ErrorResponse(
+            error=Error(
+                code="WRITE_OPERATION_FORBIDDEN",
+                message="Write operations are not allowed. This API is read-only.",
+                details={
+                    "query": _truncate_query(query_request.query),
+                    "forbidden_keyword": forbidden_keyword,
+                    "allowed_operations": ALLOWED_OPERATIONS,
+                },
+            )
         )
+        return JSONResponse(status_code=403, content=error_response.model_dump())
 
     # Execute query
     settings = get_settings()
@@ -267,19 +265,17 @@ async def execute_query(
         # Check for timeout-related errors
         if "timeout" in error_msg or "timed out" in error_msg:
             logger.warning("Query execution timed out: %s", e)
-            return JSONResponse(
-                status_code=504,
-                content={
-                    "error": {
-                        "code": "QUERY_TIMEOUT",
-                        "message": "Query execution exceeded timeout limit",
-                        "details": {
-                            "timeout_seconds": settings.query_timeout_seconds,
-                            "query": _truncate_query(query_request.query),
-                        },
-                    }
-                },
+            error_response = ErrorResponse(
+                error=Error(
+                    code="QUERY_TIMEOUT",
+                    message="Query execution exceeded timeout limit",
+                    details={
+                        "timeout_seconds": settings.query_timeout_seconds,
+                        "query": _truncate_query(query_request.query),
+                    },
+                )
             )
+            return JSONResponse(status_code=504, content=error_response.model_dump())
         # Re-raise for other client errors to be handled below
         raise
 
@@ -295,13 +291,11 @@ async def execute_query(
         if position is not None:
             details["position"] = position
 
-        return JSONResponse(
-            status_code=400,
-            content={
-                "error": {
-                    "code": "QUERY_SYNTAX_ERROR",
-                    "message": "Invalid Cypher query syntax",
-                    "details": details,
-                }
-            },
+        error_response = ErrorResponse(
+            error=Error(
+                code="QUERY_SYNTAX_ERROR",
+                message="Invalid Cypher query syntax",
+                details=details,
+            )
         )
+        return JSONResponse(status_code=400, content=error_response.model_dump())

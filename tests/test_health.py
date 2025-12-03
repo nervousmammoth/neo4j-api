@@ -566,7 +566,8 @@ class TestDatabasesListFailure:
         data = response.json()
         assert "error" in data
         assert data["error"]["code"] == "DATABASE_QUERY_ERROR"
-        assert data["error"]["details"] == {}
+        assert data["error"]["message"] == "Failed to list databases"
+        assert data["error"]["details"] == {"reason": "Permission denied"}
 
     def test_databases_returns_503_when_neo4j_unavailable(
         self,
