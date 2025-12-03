@@ -80,7 +80,8 @@ All errors follow this consistent structure:
 {
   "error": {
     "code": "INVALID_API_KEY",
-    "message": "The provided API key is invalid"
+    "message": "The provided API key is invalid",
+    "details": {}
   }
 }
 ```

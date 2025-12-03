@@ -56,7 +56,7 @@ class TestVerifyApiKey:
         error = exc_info.value.detail["error"]
         assert error["code"] == "INVALID_API_KEY"
         assert error["message"] == "Invalid API key provided"
-        assert "details" not in error  # No details for invalid key
+        assert error["details"] == {}  # Empty details for consistency
 
     @pytest.mark.asyncio
     async def test_missing_api_key_denies_access(

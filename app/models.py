@@ -34,8 +34,8 @@ class Error(BaseModel):
 
     code: str = Field(..., description="Machine-readable error code")
     message: str = Field(..., description="Human-readable error message")
-    details: dict[str, Any] | None = Field(
-        default=None, description="Optional additional error details"
+    details: dict[str, Any] = Field(
+        default_factory=dict, description="Additional error details (empty if none)"
     )
 
 

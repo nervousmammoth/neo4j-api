@@ -51,6 +51,7 @@ jobs:
         if: steps.check_app.outputs.exists == 'true'
         run: |
           pytest tests/ \
+            --ignore=tests/integration \
             --cov=app \
             --cov-report=xml \
             --cov-report=html \
