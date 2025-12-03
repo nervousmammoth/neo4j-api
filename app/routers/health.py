@@ -130,6 +130,7 @@ async def list_databases(request: Request) -> DatabaseListResponse | JSONRespons
                 "error": {
                     "code": "NEO4J_UNAVAILABLE",
                     "message": "Neo4j client not initialized",
+                    "details": {},
                 }
             },
         )
@@ -162,6 +163,7 @@ async def list_databases(request: Request) -> DatabaseListResponse | JSONRespons
                 "error": {
                     "code": "DATABASE_QUERY_ERROR",
                     "message": f"Failed to list databases: {e!s}",
+                    "details": {},
                 }
             },
         )

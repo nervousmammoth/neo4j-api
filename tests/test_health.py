@@ -565,6 +565,8 @@ class TestDatabasesListFailure:
         assert response.status_code == 500
         data = response.json()
         assert "error" in data
+        assert data["error"]["code"] == "DATABASE_QUERY_ERROR"
+        assert data["error"]["details"] == {}
 
     def test_databases_returns_503_when_neo4j_unavailable(
         self,
@@ -597,6 +599,8 @@ class TestDatabasesListFailure:
         assert response.status_code == 503
         data = response.json()
         assert "error" in data
+        assert data["error"]["code"] == "NEO4J_UNAVAILABLE"
+        assert data["error"]["details"] == {}
 
 
 class TestDatabasesListEdgeCases:

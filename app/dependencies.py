@@ -61,6 +61,7 @@ async def verify_api_key(
                 "error": {
                     "code": "INVALID_API_KEY",
                     "message": "Invalid API key provided",
+                    "details": {},
                 }
             },
         )
