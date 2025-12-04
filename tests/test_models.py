@@ -1061,6 +1061,28 @@ class TestSearchResultModel:
         assert result.source == "1"
         assert result.target == "2"
 
+    def test_search_result_mixed_fields_fails(self) -> None:
+        """Test that SearchResult with both node and edge fields fails."""
+        with pytest.raises(ValidationError, match="cannot have both node-specific"):
+            SearchResult(
+                id="1",
+                labels=["Person"],
+                type="KNOWS",
+                source="2",
+                target="3",
+                properties={},
+            )
+
+    def test_search_result_incomplete_edge_fails(self) -> None:
+        """Test that SearchResult with incomplete edge fields fails."""
+        with pytest.raises(ValidationError, match="all required"):
+            SearchResult(
+                id="1",
+                type="KNOWS",
+                source="2",
+                properties={},
+            )
+
 
 class TestSearchResponseModel:
     """Test cases for the SearchResponse model."""
@@ -1110,8 +1132,8 @@ class TestSearchResponseModel:
         assert response.total_hits == 100
         assert response.more_results is True
 
-    def test_search_response_empty_results(self) -> None:
-        """Test SearchResponse with empty results list."""
+    def test_search_response_empty_results_node(self) -> None:
+        """Test SearchResponse with empty results list for node type."""
         response = SearchResponse(
             type="node",
             total_hits=0,
@@ -1120,6 +1142,20 @@ class TestSearchResponseModel:
         )
 
         assert response.type == "node"
+        assert response.results == []
+        assert response.total_hits == 0
+        assert response.more_results is False
+
+    def test_search_response_empty_results_edge(self) -> None:
+        """Test SearchResponse with empty results list for edge type."""
+        response = SearchResponse(
+            type="edge",
+            total_hits=0,
+            more_results=False,
+            results=[],
+        )
+
+        assert response.type == "edge"
         assert response.results == []
         assert response.total_hits == 0
         assert response.more_results is False
@@ -1239,3 +1275,31 @@ class TestSearchResponseModel:
         assert len(json_dict["results"]) == 1
         assert json_dict["results"][0]["id"] == "123"
         assert json_dict["results"][0]["labels"] == ["Person"]
+
+    def test_search_response_edge_in_node_response_fails(self) -> None:
+        """Test that edge result in node response fails validation."""
+        edge_result = SearchResult(
+            id="1",
+            type="KNOWS",
+            source="2",
+            target="3",
+            properties={},
+        )
+
+        with pytest.raises(
+            ValidationError, match="is an edge, but response type is 'node'"
+        ):
+            SearchResponse(type="node", results=[edge_result])
+
+    def test_search_response_node_in_edge_response_fails(self) -> None:
+        """Test that node result in edge response fails validation."""
+        node_result = SearchResult(
+            id="1",
+            labels=["Person"],
+            properties={},
+        )
+
+        with pytest.raises(
+            ValidationError, match="is a node, but response type is 'edge'"
+        ):
+            SearchResponse(type="edge", results=[node_result])

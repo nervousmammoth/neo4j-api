@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class Error(BaseModel):
@@ -500,8 +500,33 @@ class SearchResult(BaseModel):
         default=None, description="Target node ID (for edge search results)"
     )
 
-    model_config = {
-        "json_schema_extra": {
+    @model_validator(mode="after")
+    def check_field_consistency(self) -> SearchResult:
+        """Validate that fields are consistent for a node or an edge."""
+        is_edge = (
+            self.type is not None or self.source is not None or self.target is not None
+        )
+        is_node = self.labels is not None
+
+        if is_node and is_edge:
+            raise ValueError(
+                "SearchResult cannot have both node-specific ('labels') and "
+                "edge-specific ('type', 'source', 'target') fields."
+            )
+
+        if is_edge and not (
+            self.type is not None
+            and self.source is not None
+            and self.target is not None
+        ):
+            raise ValueError(
+                "For an edge result, 'type', 'source', and 'target' are all required."
+            )
+
+        return self
+
+    model_config = ConfigDict(
+        json_schema_extra={
             "examples": [
                 {
                     "id": "123",
@@ -517,7 +542,7 @@ class SearchResult(BaseModel):
                 },
             ]
         }
-    }
+    )
 
 
 class SearchResponse(BaseModel):
@@ -556,6 +581,23 @@ class SearchResponse(BaseModel):
         description="True if more results available",
     )
     results: list[SearchResult] = Field(..., description="Search results")
+
+    @model_validator(mode="after")
+    def check_results_match_response_type(self) -> SearchResponse:
+        """Validate that results are consistent with the response type."""
+        if self.type == "node":
+            for i, result in enumerate(self.results):
+                if result.type is not None:
+                    raise ValueError(
+                        f"Result at index {i} is an edge, but response type is 'node'."
+                    )
+        else:  # type == "edge"
+            for i, result in enumerate(self.results):
+                if result.type is None:
+                    raise ValueError(
+                        f"Result at index {i} is a node, but response type is 'edge'."
+                    )
+        return self
 
     model_config = ConfigDict(
         populate_by_name=True,
