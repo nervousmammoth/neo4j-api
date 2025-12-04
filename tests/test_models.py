@@ -18,6 +18,8 @@ from app.models import (
     QueryMeta,
     QueryRequest,
     QueryResponse,
+    SearchResponse,
+    SearchResult,
     SuccessResponse,
 )
 
@@ -911,3 +913,329 @@ class TestQueryResponseModel:
             QueryResponse(nodes=[])  # type: ignore[call-arg]
 
         assert "edges" in str(exc_info.value)
+
+
+class TestSearchResultModel:
+    """Test cases for the SearchResult model."""
+
+    def test_search_result_creation_for_node(self) -> None:
+        """Test creating SearchResult for a node search result."""
+        result = SearchResult(
+            id="123",
+            labels=["Person", "Employee"],
+            properties={"name": "Alice", "age": 30},
+        )
+
+        assert result.id == "123"
+        assert result.labels == ["Person", "Employee"]
+        assert result.properties == {"name": "Alice", "age": 30}
+        assert result.type is None
+        assert result.source is None
+        assert result.target is None
+
+    def test_search_result_creation_for_edge(self) -> None:
+        """Test creating SearchResult for an edge search result."""
+        result = SearchResult(
+            id="789",
+            type="WORKS_FOR",
+            source="123",
+            target="456",
+            properties={"since": "2020-01-15", "role": "Engineer"},
+        )
+
+        assert result.id == "789"
+        assert result.type == "WORKS_FOR"
+        assert result.source == "123"
+        assert result.target == "456"
+        assert result.properties == {"since": "2020-01-15", "role": "Engineer"}
+        assert result.labels is None
+
+    def test_search_result_serialization_node(self) -> None:
+        """Test SearchResult serialization for node."""
+        result = SearchResult(
+            id="100",
+            labels=["Movie"],
+            properties={"title": "The Matrix", "year": 1999},
+        )
+
+        data = result.model_dump()
+
+        assert data == {
+            "id": "100",
+            "labels": ["Movie"],
+            "type": None,
+            "properties": {"title": "The Matrix", "year": 1999},
+            "source": None,
+            "target": None,
+        }
+
+    def test_search_result_serialization_edge(self) -> None:
+        """Test SearchResult serialization for edge."""
+        result = SearchResult(
+            id="200",
+            type="DIRECTED",
+            source="10",
+            target="20",
+            properties={"year": 1999},
+        )
+
+        data = result.model_dump()
+
+        assert data == {
+            "id": "200",
+            "labels": None,
+            "type": "DIRECTED",
+            "properties": {"year": 1999},
+            "source": "10",
+            "target": "20",
+        }
+
+    def test_search_result_serialization_exclude_none(self) -> None:
+        """Test SearchResult serialization excluding None values."""
+        result = SearchResult(
+            id="100",
+            labels=["Person"],
+            properties={"name": "Alice"},
+        )
+
+        data = result.model_dump(exclude_none=True)
+
+        assert data == {
+            "id": "100",
+            "labels": ["Person"],
+            "properties": {"name": "Alice"},
+        }
+        assert "type" not in data
+        assert "source" not in data
+        assert "target" not in data
+
+    def test_search_result_empty_properties(self) -> None:
+        """Test SearchResult with empty properties dict."""
+        result = SearchResult(id="999", labels=["Label"], properties={})
+
+        assert result.id == "999"
+        assert result.properties == {}
+
+    def test_search_result_missing_id_fails(self) -> None:
+        """Test that missing id raises ValidationError."""
+        with pytest.raises(ValidationError) as exc_info:
+            SearchResult(labels=["Person"], properties={})  # type: ignore[call-arg]
+
+        assert "id" in str(exc_info.value)
+
+    def test_search_result_missing_properties_fails(self) -> None:
+        """Test that missing properties raises ValidationError."""
+        with pytest.raises(ValidationError) as exc_info:
+            SearchResult(id="123", labels=["Person"])  # type: ignore[call-arg]
+
+        assert "properties" in str(exc_info.value)
+
+    def test_search_result_from_dict_node(self) -> None:
+        """Test creating SearchResult from dictionary (node)."""
+        data = {
+            "id": "50",
+            "labels": ["City"],
+            "properties": {"name": "Berlin", "population": 3645000},
+        }
+
+        result = SearchResult(**data)
+
+        assert result.id == "50"
+        assert result.labels == ["City"]
+        assert result.properties["population"] == 3645000
+
+    def test_search_result_from_dict_edge(self) -> None:
+        """Test creating SearchResult from dictionary (edge)."""
+        data = {
+            "id": "60",
+            "type": "LOCATED_IN",
+            "source": "1",
+            "target": "2",
+            "properties": {"since": 2010},
+        }
+
+        result = SearchResult(**data)
+
+        assert result.id == "60"
+        assert result.type == "LOCATED_IN"
+        assert result.source == "1"
+        assert result.target == "2"
+
+
+class TestSearchResponseModel:
+    """Test cases for the SearchResponse model."""
+
+    def test_search_response_node_type(self) -> None:
+        """Test creating SearchResponse with type='node'."""
+        results = [
+            SearchResult(id="1", labels=["Person"], properties={"name": "Alice"}),
+            SearchResult(id="2", labels=["Person"], properties={"name": "Bob"}),
+        ]
+
+        response = SearchResponse(type="node", results=results)
+
+        assert response.type == "node"
+        assert len(response.results) == 2
+        assert response.total_hits is None
+        assert response.more_results is None
+
+    def test_search_response_edge_type(self) -> None:
+        """Test creating SearchResponse with type='edge'."""
+        results = [
+            SearchResult(
+                id="100",
+                type="KNOWS",
+                source="1",
+                target="2",
+                properties={"since": 2020},
+            )
+        ]
+
+        response = SearchResponse(type="edge", results=results)
+
+        assert response.type == "edge"
+        assert len(response.results) == 1
+
+    def test_search_response_with_pagination_fields(self) -> None:
+        """Test SearchResponse with totalHits and moreResults."""
+        results = [SearchResult(id="1", labels=["Test"], properties={})]
+
+        response = SearchResponse(
+            type="node",
+            total_hits=100,
+            more_results=True,
+            results=results,
+        )
+
+        assert response.total_hits == 100
+        assert response.more_results is True
+
+    def test_search_response_empty_results(self) -> None:
+        """Test SearchResponse with empty results list."""
+        response = SearchResponse(
+            type="node",
+            total_hits=0,
+            more_results=False,
+            results=[],
+        )
+
+        assert response.type == "node"
+        assert response.results == []
+        assert response.total_hits == 0
+        assert response.more_results is False
+
+    def test_search_response_serialization_with_aliases(self) -> None:
+        """Test SearchResponse serialization uses camelCase aliases."""
+        results = [SearchResult(id="1", labels=["Person"], properties={"name": "Test"})]
+
+        response = SearchResponse(
+            type="node",
+            total_hits=15,
+            more_results=False,
+            results=results,
+        )
+
+        data = response.model_dump(by_alias=True, exclude_none=True)
+
+        assert data == {
+            "type": "node",
+            "totalHits": 15,
+            "moreResults": False,
+            "results": [
+                {
+                    "id": "1",
+                    "labels": ["Person"],
+                    "properties": {"name": "Test"},
+                }
+            ],
+        }
+
+    def test_search_response_serialization_exclude_none(self) -> None:
+        """Test SearchResponse serialization excluding None values."""
+        response = SearchResponse(type="node", results=[])
+
+        data = response.model_dump(by_alias=True, exclude_none=True)
+
+        assert data == {"type": "node", "results": []}
+        assert "totalHits" not in data
+        assert "moreResults" not in data
+
+    def test_search_response_invalid_type_fails(self) -> None:
+        """Test that invalid type value raises ValidationError."""
+        with pytest.raises(ValidationError) as exc_info:
+            SearchResponse(
+                type="invalid",  # type: ignore[arg-type]
+                results=[],
+            )
+
+        assert "type" in str(exc_info.value)
+
+    def test_search_response_missing_type_fails(self) -> None:
+        """Test that missing type raises ValidationError."""
+        with pytest.raises(ValidationError) as exc_info:
+            SearchResponse(results=[])  # type: ignore[call-arg]
+
+        assert "type" in str(exc_info.value)
+
+    def test_search_response_missing_results_fails(self) -> None:
+        """Test that missing results raises ValidationError."""
+        with pytest.raises(ValidationError) as exc_info:
+            SearchResponse(type="node")  # type: ignore[call-arg]
+
+        assert "results" in str(exc_info.value)
+
+    def test_search_response_from_dict(self) -> None:
+        """Test creating SearchResponse from dictionary with aliases."""
+        data = {
+            "type": "edge",
+            "totalHits": 5,
+            "moreResults": True,
+            "results": [
+                {
+                    "id": "789",
+                    "type": "WORKS_FOR",
+                    "source": "123",
+                    "target": "456",
+                    "properties": {"since": "2020-01-15"},
+                }
+            ],
+        }
+
+        response = SearchResponse(**data)
+
+        assert response.type == "edge"
+        assert response.total_hits == 5
+        assert response.more_results is True
+        assert len(response.results) == 1
+        assert response.results[0].type == "WORKS_FOR"
+
+    def test_search_response_json_structure_matches_spec(self) -> None:
+        """Test that JSON structure matches Linkurious API specification."""
+        results = [
+            SearchResult(
+                id="123",
+                labels=["Person"],
+                properties={"name": "Alice Smith", "age": 30},
+            )
+        ]
+
+        response = SearchResponse(
+            type="node",
+            total_hits=15,
+            more_results=False,
+            results=results,
+        )
+
+        json_dict = response.model_dump(by_alias=True, exclude_none=True)
+
+        # Verify structure as per spec
+        assert "type" in json_dict
+        assert "totalHits" in json_dict
+        assert "moreResults" in json_dict
+        assert "results" in json_dict
+        assert json_dict["type"] == "node"
+        assert json_dict["totalHits"] == 15
+        assert json_dict["moreResults"] is False
+        assert len(json_dict["results"]) == 1
+        assert json_dict["results"][0]["id"] == "123"
+        assert json_dict["results"][0]["labels"] == ["Person"]

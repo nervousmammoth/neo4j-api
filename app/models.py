@@ -448,3 +448,145 @@ class QueryResponse(BaseModel):
             }
         },
     )
+
+
+# Search Models
+
+
+class SearchResult(BaseModel):
+    """Unified search result for both node and edge searches.
+
+    This model represents a single search result item that can be either
+    a node or an edge, depending on the search type.
+
+    Attributes:
+        id: Result ID as string (node ID or relationship ID).
+        labels: Node labels (only for node search results).
+        type: Relationship type (only for edge search results).
+        properties: Dictionary of properties.
+        source: Source node ID (only for edge search results).
+        target: Target node ID (only for edge search results).
+
+    Examples:
+        >>> # Node search result
+        >>> result = SearchResult(
+        ...     id="123",
+        ...     labels=["Person"],
+        ...     properties={"name": "Alice", "age": 30}
+        ... )
+
+        >>> # Edge search result
+        >>> result = SearchResult(
+        ...     id="789",
+        ...     type="WORKS_FOR",
+        ...     source="123",
+        ...     target="456",
+        ...     properties={"since": "2020-01-15"}
+        ... )
+    """
+
+    id: str = Field(..., description="Result ID")
+    labels: list[str] | None = Field(
+        default=None, description="Node labels (for node search results)"
+    )
+    type: str | None = Field(
+        default=None, description="Relationship type (for edge search results)"
+    )
+    properties: dict[str, Any] = Field(..., description="Result properties")
+    source: str | None = Field(
+        default=None, description="Source node ID (for edge search results)"
+    )
+    target: str | None = Field(
+        default=None, description="Target node ID (for edge search results)"
+    )
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "id": "123",
+                    "labels": ["Person"],
+                    "properties": {"name": "Alice Smith", "age": 30},
+                },
+                {
+                    "id": "789",
+                    "type": "WORKS_FOR",
+                    "source": "123",
+                    "target": "456",
+                    "properties": {"since": "2020-01-15"},
+                },
+            ]
+        }
+    }
+
+
+class SearchResponse(BaseModel):
+    """Search results response.
+
+    Response model for search endpoints (GET /api/{database}/search/node/full
+    and GET /api/{database}/search/edge/full).
+
+    Attributes:
+        type: Search type ("node" or "edge").
+        total_hits: Total number of matching items (if known).
+        more_results: True if more results are available beyond the current page.
+        results: List of search result items.
+
+    Examples:
+        >>> results = [SearchResult(id="1", labels=["Person"], properties={"name": "Alice"})]
+        >>> response = SearchResponse(
+        ...     type="node",
+        ...     total_hits=15,
+        ...     more_results=False,
+        ...     results=results
+        ... )
+    """
+
+    type: Literal["node", "edge"] = Field(..., description="Search type")
+    total_hits: int | None = Field(
+        default=None,
+        alias="totalHits",
+        serialization_alias="totalHits",
+        description="Total matching items",
+    )
+    more_results: bool | None = Field(
+        default=None,
+        alias="moreResults",
+        serialization_alias="moreResults",
+        description="True if more results available",
+    )
+    results: list[SearchResult] = Field(..., description="Search results")
+
+    model_config = ConfigDict(
+        populate_by_name=True,
+        json_schema_extra={
+            "examples": [
+                {
+                    "type": "node",
+                    "totalHits": 15,
+                    "moreResults": False,
+                    "results": [
+                        {
+                            "id": "123",
+                            "labels": ["Person"],
+                            "properties": {"name": "Alice Smith", "age": 30},
+                        }
+                    ],
+                },
+                {
+                    "type": "edge",
+                    "totalHits": 5,
+                    "moreResults": False,
+                    "results": [
+                        {
+                            "id": "789",
+                            "type": "WORKS_FOR",
+                            "source": "123",
+                            "target": "456",
+                            "properties": {"since": "2020-01-15"},
+                        }
+                    ],
+                },
+            ]
+        },
+    )
