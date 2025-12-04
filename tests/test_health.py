@@ -209,13 +209,13 @@ class TestHealthCheckFailure:
         assert "error" in data
         assert isinstance(data["error"], str)
 
-    def test_unhealthy_response_validates_against_health_response_model(
+    def test_unhealthy_response_conforms_to_health_response_model(
         self,
         settings_fixture: Settings,
     ) -> None:
-        """Verify 503 response conforms to HealthResponse model schema.
+        """Verify 503 response conforms to HealthResponse model and contains all fields.
 
-        This ensures OpenAPI documentation contract is honored - clients
+        This ensures the OpenAPI documentation contract is honored and that clients
         using code generation will get correct type definitions.
 
         Args:
@@ -247,56 +247,16 @@ class TestHealthCheckFailure:
         # This should NOT raise ValidationError
         try:
             validated = HealthResponse(**data)
-            assert validated.status == "unhealthy"
-            assert validated.neo4j == "disconnected"
         except ValidationError as e:
             raise AssertionError(
                 f"503 response does not validate against HealthResponse model: {e}"
             ) from e
 
-    def test_unhealthy_response_has_all_health_response_fields(
-        self,
-        settings_fixture: Settings,
-    ) -> None:
-        """Verify 503 response includes all HealthResponse fields.
-
-        Args:
-            settings_fixture: Test settings with configured values.
-        """
-        # Arrange
-        from app.routers.health import router
-
-        app = FastAPI()
-        app.include_router(router)
-
-        mock_client = MagicMock()
-        mock_client.verify_connectivity.return_value = False
-        app.state.neo4j_client = mock_client
-
-        from app.config import get_settings
-
-        app.dependency_overrides[get_settings] = lambda: settings_fixture
-
-        client = TestClient(app)
-
-        # Act
-        response = client.get("/api/health")
-
-        # Assert - All HealthResponse fields present
-        assert response.status_code == 503
-        data = response.json()
-
-        # Required fields
-        assert "status" in data
-        assert "neo4j" in data
-
-        # Verify field types match HealthResponse model
-        assert data["status"] in ["healthy", "unhealthy"]
-        assert data["neo4j"] in ["connected", "disconnected"]
-
-        # Version should be present (from settings)
-        assert "version" in data
-        assert data["version"] == settings_fixture.api_version
+        # Assert field values on the validated model
+        assert validated.status == "unhealthy"
+        assert validated.neo4j == "disconnected"
+        assert validated.version == settings_fixture.api_version
+        assert isinstance(validated.error, str)
 
 
 class TestHealthCheckEdgeCases:
