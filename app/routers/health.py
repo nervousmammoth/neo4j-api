@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Response
 from fastapi.responses import JSONResponse
 
 from app.config import get_settings
@@ -42,7 +42,7 @@ router = APIRouter(prefix="/api", tags=["health"])
         },
     },
 )
-async def health_check(request: Request) -> HealthResponse | JSONResponse:
+async def health_check(request: Request, response: Response) -> HealthResponse:
     """Health check endpoint.
 
     Returns API health status and Neo4j connectivity information.
@@ -50,6 +50,7 @@ async def health_check(request: Request) -> HealthResponse | JSONResponse:
 
     Args:
         request: FastAPI request object for accessing app state.
+        response: FastAPI response object for setting status code.
 
     Returns:
         HealthResponse with status, neo4j connectivity, and version.
@@ -58,16 +59,14 @@ async def health_check(request: Request) -> HealthResponse | JSONResponse:
     settings = get_settings()
     version = settings.api_version
 
-    def _unhealthy_response(error_msg: str) -> JSONResponse:
-        """Create a standardized unhealthy JSONResponse."""
-        return JSONResponse(
-            status_code=503,
-            content={
-                "status": "unhealthy",
-                "neo4j": "disconnected",
-                "version": version,
-                "error": error_msg,
-            },
+    def _unhealthy_response(error_msg: str) -> HealthResponse:
+        """Create a standardized unhealthy HealthResponse."""
+        response.status_code = 503
+        return HealthResponse(
+            status="unhealthy",
+            neo4j="disconnected",
+            version=version,
+            error=error_msg,
         )
 
     # Check if Neo4j client is initialized
