@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class Error(BaseModel):
@@ -446,5 +446,189 @@ class QueryResponse(BaseModel):
                     "execution_time_ms": 12.5,
                 },
             }
+        },
+    )
+
+
+# Search Models
+
+
+class SearchResult(BaseModel):
+    """Unified search result for both node and edge searches.
+
+    This model represents a single search result item that can be either
+    a node or an edge, depending on the search type.
+
+    Attributes:
+        id: Result ID as string (node ID or relationship ID).
+        labels: Node labels (only for node search results).
+        type: Relationship type (only for edge search results).
+        properties: Dictionary of properties.
+        source: Source node ID (only for edge search results).
+        target: Target node ID (only for edge search results).
+
+    Examples:
+        >>> # Node search result
+        >>> result = SearchResult(
+        ...     id="123",
+        ...     labels=["Person"],
+        ...     properties={"name": "Alice", "age": 30}
+        ... )
+
+        >>> # Edge search result
+        >>> result = SearchResult(
+        ...     id="789",
+        ...     type="WORKS_FOR",
+        ...     source="123",
+        ...     target="456",
+        ...     properties={"since": "2020-01-15"}
+        ... )
+    """
+
+    id: str = Field(..., description="Result ID")
+    labels: list[str] | None = Field(
+        default=None, description="Node labels (for node search results)"
+    )
+    type: str | None = Field(
+        default=None, description="Relationship type (for edge search results)"
+    )
+    properties: dict[str, Any] = Field(..., description="Result properties")
+    source: str | None = Field(
+        default=None, description="Source node ID (for edge search results)"
+    )
+    target: str | None = Field(
+        default=None, description="Target node ID (for edge search results)"
+    )
+
+    @model_validator(mode="after")
+    def check_field_consistency(self) -> SearchResult:
+        """Validate that fields are consistent for a node or an edge."""
+        is_edge = (
+            self.type is not None or self.source is not None or self.target is not None
+        )
+        is_node = self.labels is not None
+
+        if is_node and is_edge:
+            raise ValueError(
+                "SearchResult cannot have both node-specific ('labels') and "
+                "edge-specific ('type', 'source', 'target') fields."
+            )
+
+        if is_edge and not (
+            self.type is not None
+            and self.source is not None
+            and self.target is not None
+        ):
+            raise ValueError(
+                "For an edge result, 'type', 'source', and 'target' are all required."
+            )
+
+        return self
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "id": "123",
+                    "labels": ["Person"],
+                    "properties": {"name": "Alice Smith", "age": 30},
+                },
+                {
+                    "id": "789",
+                    "type": "WORKS_FOR",
+                    "source": "123",
+                    "target": "456",
+                    "properties": {"since": "2020-01-15"},
+                },
+            ]
+        }
+    )
+
+
+class SearchResponse(BaseModel):
+    """Search results response.
+
+    Response model for search endpoints (GET /api/{database}/search/node/full
+    and GET /api/{database}/search/edge/full).
+
+    Attributes:
+        type: Search type ("node" or "edge").
+        total_hits: Total number of matching items (if known).
+        more_results: True if more results are available beyond the current page.
+        results: List of search result items.
+
+    Examples:
+        >>> results = [SearchResult(id="1", labels=["Person"], properties={"name": "Alice"})]
+        >>> response = SearchResponse(
+        ...     type="node",
+        ...     total_hits=15,
+        ...     more_results=False,
+        ...     results=results
+        ... )
+    """
+
+    type: Literal["node", "edge"] = Field(..., description="Search type")
+    total_hits: int | None = Field(
+        default=None,
+        alias="totalHits",
+        serialization_alias="totalHits",
+        description="Total matching items",
+    )
+    more_results: bool | None = Field(
+        default=None,
+        alias="moreResults",
+        serialization_alias="moreResults",
+        description="True if more results available",
+    )
+    results: list[SearchResult] = Field(..., description="Search results")
+
+    @model_validator(mode="after")
+    def check_results_match_response_type(self) -> SearchResponse:
+        """Validate that results are consistent with the response type."""
+        if self.type == "node":
+            for i, result in enumerate(self.results):
+                if result.type is not None:
+                    raise ValueError(
+                        f"Result at index {i} is an edge, but response type is 'node'."
+                    )
+        else:  # type == "edge"
+            for i, result in enumerate(self.results):
+                if result.type is None:
+                    raise ValueError(
+                        f"Result at index {i} is a node, but response type is 'edge'."
+                    )
+        return self
+
+    model_config = ConfigDict(
+        populate_by_name=True,
+        json_schema_extra={
+            "examples": [
+                {
+                    "type": "node",
+                    "totalHits": 15,
+                    "moreResults": False,
+                    "results": [
+                        {
+                            "id": "123",
+                            "labels": ["Person"],
+                            "properties": {"name": "Alice Smith", "age": 30},
+                        }
+                    ],
+                },
+                {
+                    "type": "edge",
+                    "totalHits": 5,
+                    "moreResults": False,
+                    "results": [
+                        {
+                            "id": "789",
+                            "type": "WORKS_FOR",
+                            "source": "123",
+                            "target": "456",
+                            "properties": {"since": "2020-01-15"},
+                        }
+                    ],
+                },
+            ]
         },
     )
