@@ -110,17 +110,20 @@ async def search_nodes(
         # Determine if more results might exist
         more_results = len(search_results) == size
 
+        # totalHits: 0 if no results (we know the exact count),
+        # None otherwise (unknown without separate COUNT query)
+        total_hits = 0 if len(search_results) == 0 else None
+
         return SearchResponse(  # type: ignore[call-arg]
             type="node",
-            total_hits=len(search_results),
+            total_hits=total_hits,
             more_results=more_results,
             results=search_results,
         )
 
     except ClientError as e:
-        error_msg = str(e)
-        # Check for database not found error
-        if "does not exist" in error_msg.lower():
+        # Check for database not found using Neo4j error code
+        if getattr(e, "code", None) == "Neo.ClientError.Database.DatabaseNotFound":
             logger.warning("Database not found: %s", database)
             error_response = ErrorResponse(
                 error=Error(

@@ -364,10 +364,10 @@ class TestNodeSearchErrors:
         app.include_router(router)
 
         mock_client = MagicMock()
-        # Simulate database not found error from Neo4j
-        mock_client.execute_query.side_effect = ClientError(
-            "Database 'nonexistent' does not exist"
-        )
+        # Simulate database not found error from Neo4j with proper error code
+        db_not_found_error = ClientError("Database 'nonexistent' does not exist")
+        db_not_found_error.code = "Neo.ClientError.Database.DatabaseNotFound"
+        mock_client.execute_query.side_effect = db_not_found_error
         app.state.neo4j_client = mock_client
 
         app.dependency_overrides[get_settings] = lambda: settings_fixture
